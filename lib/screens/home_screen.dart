@@ -360,9 +360,11 @@ class _HomeScreenState extends State<HomeScreen> {
           subtitle: reminder.dueDate != null
               ? Text(
                   _formatDate(reminder.dueDate),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
-                    color: CupertinoColors.systemRed,
+                    color: _isOverdue(reminder.dueDate!)
+                        ? CupertinoColors.systemRed
+                        : CupertinoColors.systemGrey,
                   ),
                 )
               : null,
@@ -389,5 +391,10 @@ class _HomeScreenState extends State<HomeScreen> {
         // TODO: 实现相应功能
       },
     );
+  }
+
+  // 添加一个辅助方法来判断是否逾期
+  bool _isOverdue(DateTime dueDate) {
+    return dueDate.isBefore(DateTime.now());
   }
 }

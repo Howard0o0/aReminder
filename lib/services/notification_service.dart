@@ -35,9 +35,7 @@ class NotificationService {
         debug: true
       );
 
-      // 请求所有必要的权限
       await _requestRequiredPermissions();
-      
       print('通知服务初始化成功');
     } catch (e) {
       print('通知服务初始化失败: $e');
@@ -46,31 +44,21 @@ class NotificationService {
   }
 
   Future<void> _requestRequiredPermissions() async {
-    // 请求通知权限
     final isAllowed = await AwesomeNotifications().isNotificationAllowed();
     if (!isAllowed) {
       await AwesomeNotifications().requestPermissionToSendNotifications();
     }
 
-    // 只在 Android 上执行
     if (!Platform.isAndroid) return;
 
-    // 检查 Android 版本
     final deviceInfo = await DeviceInfoPlugin().androidInfo;
     final androidVersion = deviceInfo.version.sdkInt;
 
-    // Android 12 及以上需要请求精确闹钟权限
     if (androidVersion >= 31) {
       final status = await Permission.scheduleExactAlarm.status;
       if (status.isDenied) {
         await Permission.scheduleExactAlarm.request();
       }
-    }
-
-    // 请求忽略电池优化
-    final status = await Permission.ignoreBatteryOptimizations.status;
-    if (status.isDenied) {
-      await Permission.ignoreBatteryOptimizations.request();
     }
   }
 
@@ -84,12 +72,12 @@ class NotificationService {
     }
 
     try {
-      print('准备创建通知:');
+      print('准备设置提醒:');
       print('ID: ${reminder.id}');
       print('标题: ${reminder.title}');
       print('时间: ${reminder.dueDate}');
 
-      bool success = await AwesomeNotifications().createNotification(
+      await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: reminder.id!,
           channelKey: 'scheduled_channel',
@@ -111,18 +99,9 @@ class NotificationService {
         ),
       );
 
-      print('通知创建${success ? '成功' : '失败'}');
-
-      if (success) {
-        final schedules = await AwesomeNotifications().listScheduledNotifications();
-        print('当前计划的通知:');
-        for (var schedule in schedules) {
-          print('ID: ${schedule.content?.id}, 计划时间: ${schedule.schedule?.toMap()}');
-        }
-      }
-
+      print('提醒设置成功');
     } catch (e) {
-      print('设置通知失败: $e');
+      print('设置提醒失败: $e');
       rethrow;
     }
   }
@@ -130,9 +109,9 @@ class NotificationService {
   Future<void> cancelReminder(int id) async {
     try {
       await AwesomeNotifications().cancel(id);
-      print('通知 $id 已取消');
+      print('提醒 $id 已取消');
     } catch (e) {
-      print('取消通知失败: $e');
+      print('取消提醒失败: $e');
       rethrow;
     }
   }
@@ -140,9 +119,9 @@ class NotificationService {
   Future<void> cancelAllReminders() async {
     try {
       await AwesomeNotifications().cancelAll();
-      print('所有通知已取消');
+      print('所有提醒已取消');
     } catch (e) {
-      print('取消所有通知失败: $e');
+      print('取消所有提醒失败: $e');
       rethrow;
     }
   }
