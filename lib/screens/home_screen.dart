@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isAddingNewReminder = true;
     });
-    // 自动显示���盘
+    // 自动显示键盘
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -251,70 +251,109 @@ class _HomeScreenState extends State<HomeScreen> {
     Reminder reminder,
     RemindersProvider provider,
   ) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Color(0xFFE5E5EA),
-            width: 0.5,
-          ),
+    return Dismissible(
+      key: Key(reminder.id.toString()),
+      direction: DismissDirection.endToStart, // 只允许从右向左滑动
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: CupertinoColors.destructiveRed,
+        child: const Icon(
+          CupertinoIcons.delete,
+          color: CupertinoColors.white,
         ),
       ),
-      child: CupertinoListTile(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: GestureDetector(
-          onTap: () => provider.toggleComplete(reminder),
-          child: Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
+      confirmDismiss: (direction) async {
+        // 显示确认对话框
+        return await showCupertinoDialog<bool>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('删除提醒'),
+            content: const Text('确定要删除这个提醒吗？'),
+            actions: [
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除'),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+            ],
+          ),
+        ) ?? false;
+      },
+      onDismissed: (direction) {
+        // 删除提醒
+        provider.deleteReminder(reminder.id!);
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Color(0xFFE5E5EA),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: CupertinoListTile(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: GestureDetector(
+            onTap: () => provider.toggleComplete(reminder),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: reminder.isCompleted
+                      ? CupertinoColors.activeBlue
+                      : Color(0xFFD1D1D6),
+                  width: 1.5,
+                ),
                 color: reminder.isCompleted
                     ? CupertinoColors.activeBlue
-                    : Color(0xFFD1D1D6),
-                width: 1.5,
+                    : CupertinoColors.white,
               ),
-              color: reminder.isCompleted
-                  ? CupertinoColors.activeBlue
-                  : CupertinoColors.white,
+              child: reminder.isCompleted
+                  ? const Icon(
+                      CupertinoIcons.checkmark,
+                      size: 14,
+                      color: CupertinoColors.white,
+                    )
+                  : null,
             ),
-            child: reminder.isCompleted
-                ? const Icon(
-                    CupertinoIcons.checkmark,
-                    size: 14,
-                    color: CupertinoColors.white,
-                  )
-                : null,
           ),
-        ),
-        title: Text(
-          reminder.title,
-          style: TextStyle(
-            fontSize: 17,
-            decoration: reminder.isCompleted
-                ? TextDecoration.lineThrough
-                : TextDecoration.none,
-            color: reminder.isCompleted
-                ? CupertinoColors.systemGrey
-                : CupertinoColors.black,
+          title: Text(
+            reminder.title,
+            style: TextStyle(
+              fontSize: 17,
+              decoration: reminder.isCompleted
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
+              color: reminder.isCompleted
+                  ? CupertinoColors.systemGrey
+                  : CupertinoColors.black,
+            ),
           ),
+          subtitle: reminder.dueDate != null
+              ? Text(
+                  _formatDate(reminder.dueDate),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: CupertinoColors.systemRed,
+                  ),
+                )
+              : null,
+          trailing: const Icon(
+            CupertinoIcons.chevron_right,
+            color: CupertinoColors.systemGrey3,
+            size: 20,
+          ),
+          onTap: () => _showReminderDetails(context, reminder),
         ),
-        subtitle: reminder.dueDate != null
-            ? Text(
-                _formatDate(reminder.dueDate),
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: CupertinoColors.systemRed,
-                ),
-              )
-            : null,
-        trailing: const Icon(
-          CupertinoIcons.chevron_right,
-          color: CupertinoColors.systemGrey3,
-          size: 20,
-        ),
-        onTap: () => _showReminderDetails(context, reminder),
       ),
     );
   }

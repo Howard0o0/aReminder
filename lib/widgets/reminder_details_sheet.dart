@@ -29,6 +29,8 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
   TimeOfDay? _selectedTime;
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  bool _isDatePickerVisible = false;
+  bool _isTimePickerVisible = false;
 
   @override
   void initState() {
@@ -111,7 +113,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
             _selectedTime!.minute,
           );
         } else {
-          // 如果只选择了日期，默认设置为当天早上 9 点
+          // 如果只选择了日期，默设置为当天早上 9 点
           dueDate = DateTime(
             _selectedDate!.year,
             _selectedDate!.month,
@@ -232,74 +234,157 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                   ),
                   CupertinoListSection.insetGrouped(
                     children: [
-                      CupertinoListTile(
-                        title: const Text('日期'),
-                        trailing: CupertinoSwitch(
-                          value: _hasDate,
-                          onChanged: (value) {
+                      Container(
+                        color: CupertinoColors.systemBackground,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
                             setState(() {
-                              _hasDate = value;
-                              if (!value) {
-                                _hasTime = false;
-                                _selectedDate = null;
-                                _selectedTime = null;
-                              } else {
+                              _isDatePickerVisible = !_isDatePickerVisible;
+                              if (_isDatePickerVisible) {
                                 _selectedDate = DateTime.now();
+                                _isTimePickerVisible = false;
                               }
                             });
                           },
+                          child: CupertinoListTile(
+                            title: const Text('日期'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_hasDate)
+                                  Text(
+                                    '${_selectedDate?.year}年${_selectedDate?.month}月${_selectedDate?.day}日',
+                                    style: const TextStyle(
+                                        color: CupertinoColors.systemBlue),
+                                  ),
+                                const SizedBox(width: 8),
+                                CupertinoSwitch(
+                                  value: _hasDate,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _hasDate = value;
+                                      if (!value) {
+                                        _hasTime = false;
+                                        _selectedDate = null;
+                                        _selectedTime = null;
+                                        _isDatePickerVisible = false;
+                                        _isTimePickerVisible = false;
+                                      } else {
+                                        _selectedDate = DateTime.now();
+                                      }
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       if (_hasDate)
-                        CupertinoListTile(
-                          title: const Text('时间'),
-                          trailing: CupertinoSwitch(
-                            value: _hasTime,
-                            onChanged: (value) {
+                        Container(
+                          color: CupertinoColors.systemBackground,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
                               setState(() {
-                                _hasTime = value;
-                                if (value && _selectedTime == null) {
+                                _isTimePickerVisible = !_isTimePickerVisible;
+                                if (_isTimePickerVisible) {
                                   _selectedTime = TimeOfDay.now();
+                                  if (_selectedDate != null) {
+                                    _selectedDate = DateTime(
+                                      _selectedDate!.year,
+                                      _selectedDate!.month,
+                                      _selectedDate!.day,
+                                      _selectedTime!.hour,
+                                      _selectedTime!.minute,
+                                    );
+                                  }
+                                  _isDatePickerVisible = false;
                                 }
                               });
                             },
+                            child: CupertinoListTile(
+                              title: const Text('时间'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_hasTime)
+                                    Text(
+                                      '${_selectedTime?.hour.toString().padLeft(2, '0')}:${_selectedTime?.minute.toString().padLeft(2, '0')}',
+                                      style: const TextStyle(
+                                          color: CupertinoColors.systemBlue),
+                                    ),
+                                  const SizedBox(width: 8),
+                                  CupertinoSwitch(
+                                    value: _hasTime,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _hasTime = value;
+                                        if (value && _selectedTime == null) {
+                                          _selectedTime = TimeOfDay.now();
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                     ],
                   ),
-                  if (_hasDate) ...[
-                    SizedBox(
+                  if (_hasDate && _isDatePickerVisible)
+                    Container(
                       height: 200,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
                       child: CupertinoDatePicker(
+                        key: const ValueKey('date_picker'),
                         mode: CupertinoDatePickerMode.date,
-                        initialDateTime: _selectedDate ?? DateTime.now(),
-                        onDateTimeChanged: (date) {
-                          setState(() => _selectedDate = date);
+                        initialDateTime:
+                            _selectedDate?.isBefore(DateTime.now()) ?? true
+                                ? DateTime.now()
+                                : _selectedDate!,
+                        minimumDate: DateTime(
+                          DateTime.now().year,
+                          DateTime.now().month,
+                          DateTime.now().day,
+                        ),
+                        onDateTimeChanged: (DateTime date) {
+                          setState(() {
+                            _selectedDate = date;
+                          });
                         },
                       ),
                     ),
-                  ],
-                  if (_hasTime) ...[
-                    SizedBox(
+                  if (_hasTime && _isTimePickerVisible)
+                    Container(
                       height: 200,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
                       child: CupertinoDatePicker(
+                        key: const ValueKey('time_picker'),
                         mode: CupertinoDatePickerMode.time,
-                        initialDateTime: _selectedTime != null
-                            ? DateTime(
-                                2024,
-                                1,
-                                1,
-                                _selectedTime!.hour,
-                                _selectedTime!.minute,
-                              )
-                            : DateTime.now(),
-                        onDateTimeChanged: (date) {
-                          setState(() =>
-                              _selectedTime = TimeOfDay.fromDateTime(date));
+                        use24hFormat: true,
+                        initialDateTime: _selectedDate ?? DateTime.now(),
+                        onDateTimeChanged: (DateTime date) {
+                          setState(() {
+                            _selectedTime = TimeOfDay(
+                              hour: date.hour,
+                              minute: date.minute,
+                            );
+                            if (_selectedDate != null) {
+                              _selectedDate = DateTime(
+                                _selectedDate!.year,
+                                _selectedDate!.month,
+                                _selectedDate!.day,
+                                date.hour,
+                                date.minute,
+                              );
+                            }
+                          });
                         },
                       ),
                     ),
-                  ],
                 ],
               ),
             ),

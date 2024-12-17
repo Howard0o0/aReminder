@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/reminder.dart';
 import '../providers/reminders_provider.dart';
 import '../services/notification_service.dart';
+import '../widgets/date_time_picker.dart';
 
 class AddReminderScreen extends StatefulWidget {
   final Reminder? reminder;
@@ -87,26 +88,17 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                 padding: const EdgeInsets.all(12),
               ),
             ),
+            DateTimePicker(
+              initialDate: _dueDate,
+              onDateTimeChanged: (dateTime) {
+                setState(() {
+                  _dueDate = dateTime;
+                });
+              },
+            ),
             CupertinoListSection.insetGrouped(
               header: const Text('详细信息'),
               children: [
-                CupertinoListTile(
-                  title: const Text('提醒时间'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _dueDate == null
-                            ? '无'
-                            : DateFormat('MM月dd日 HH:mm').format(_dueDate!),
-                        style:
-                            const TextStyle(color: CupertinoColors.systemGrey),
-                      ),
-                      const CupertinoListTileChevron(),
-                    ],
-                  ),
-                  onTap: () => _showDatePicker(context),
-                ),
                 CupertinoListTile(
                   title: const Text('优先级'),
                   trailing: CupertinoSegmentedControl<int>(
@@ -161,45 +153,6 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                   },
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDatePicker(BuildContext context) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  child: const Text('取消'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                CupertinoButton(
-                  child: const Text('确定'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {});
-                  },
-                ),
-              ],
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.dateAndTime,
-                initialDateTime: _dueDate ?? DateTime.now(),
-                onDateTimeChanged: (date) {
-                  setState(() => _dueDate = date);
-                },
-              ),
-            ),
           ],
         ),
       ),

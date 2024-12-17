@@ -54,7 +54,7 @@ class NotificationService {
         content: NotificationContent(
           id: reminder.id!,
           channelKey: 'scheduled_channel',
-          title: '提醒事项',
+          title: '',
           body: reminder.title,
           category: NotificationCategory.Alarm,
           wakeUpScreen: true,

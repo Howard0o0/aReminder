@@ -51,10 +51,20 @@ class RemindersProvider with ChangeNotifier {
   }
 
   Future<void> deleteReminder(int id) async {
-    await _db.deleteReminder(id);
-    await _notifications.cancelReminder(id);
-    _reminders.removeWhere((r) => r.id == id);
-    notifyListeners();
+    try {
+      await _notifications.cancelReminder(id);
+      
+      await _db.deleteReminder(id);
+      
+      _reminders.removeWhere((reminder) => reminder.id == id);
+      
+      notifyListeners();
+      
+      print('提醒已删除: ID=$id');
+    } catch (e) {
+      print('删除提醒失败: $e');
+      rethrow;
+    }
   }
 
   Future<void> toggleComplete(Reminder reminder) async {
