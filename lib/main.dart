@@ -10,18 +10,22 @@ import 'controllers/notification_controller.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await NotificationService().initialize();
+  try {
+    await NotificationService().initialize();
 
-  // 设置通知点击监听
-  AwesomeNotifications().setListeners(
-    onActionReceivedMethod: NotificationController.onActionReceivedMethod,
-    onNotificationCreatedMethod:
-        NotificationController.onNotificationCreatedMethod,
-    onNotificationDisplayedMethod:
-        NotificationController.onNotificationDisplayedMethod,
-    onDismissActionReceivedMethod:
-        NotificationController.onDismissActionReceivedMethod,
-  );
+    // 设置通知点击监听
+    await AwesomeNotifications().setListeners(
+      onActionReceivedMethod: NotificationController.onActionReceivedMethod,
+      onNotificationCreatedMethod:
+          NotificationController.onNotificationCreatedMethod,
+      onNotificationDisplayedMethod:
+          NotificationController.onNotificationDisplayedMethod,
+      onDismissActionReceivedMethod:
+          NotificationController.onDismissActionReceivedMethod,
+    );
+  } catch (e) {
+    print('通知初始化失败: $e');
+  }
   
   runApp(const MyApp());
 }
