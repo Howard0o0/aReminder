@@ -77,6 +77,11 @@ class RemindersProvider with ChangeNotifier {
       priority: reminder.priority,
       list: reminder.list,
     );
+    
+    if (!reminder.isCompleted && updatedReminder.isCompleted) {
+      await _notifications.cancelReminder(reminder.id!);
+    }
+    
     await updateReminder(updatedReminder);
   }
 } 

@@ -6,6 +6,7 @@ import '../providers/reminders_provider.dart';
 import '../models/reminder.dart';
 import 'add_reminder_screen.dart';
 import '../widgets/reminder_details_sheet.dart';
+import 'lists_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _newReminderController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isAddingNewReminder = false;
+  bool _showCompletedItems = false;
 
   @override
   void initState() {
@@ -93,8 +95,18 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
               child: const Text('列表'),
-              onPressed: () {
-                // TODO: 返回列表页面
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => const ListsScreen(),
+                  ),
+                );
+                if (result != null) {
+                  setState(() {
+                    _showCompletedItems = result;
+                  });
+                }
               },
             ),
             middle: const Text('提醒事项'),
@@ -131,12 +143,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           SliverList(
                             delegate: SliverChildBuilderDelegate(
-                              (context, index) => _buildReminderItem(
-                                context,
-                                provider.reminders[index],
-                                provider,
-                              ),
-                              childCount: provider.reminders.length,
+                              (context, index) {
+                                final items = _showCompletedItems
+                                    ? provider.completedReminders
+                                    : provider.incompleteReminders;
+                                return _buildReminderItem(
+                                  context,
+                                  items[index],
+                                  provider,
+                                );
+                              },
+                              childCount: _showCompletedItems
+                                  ? provider.completedReminders.length
+                                  : provider.incompleteReminders.length,
                             ),
                           ),
                         ],
