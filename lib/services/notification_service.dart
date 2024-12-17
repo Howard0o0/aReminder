@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
-  
+
   factory NotificationService() => _instance;
 
   NotificationService._internal();
@@ -15,25 +15,24 @@ class NotificationService {
   Future<void> initialize() async {
     try {
       await AwesomeNotifications().initialize(
-        null,
-        [
-          NotificationChannel(
-            channelKey: 'scheduled_channel',
-            channelName: 'Scheduled Notifications',
-            channelDescription: 'Scheduled notifications for reminders',
-            importance: NotificationImportance.High,
-            defaultPrivacy: NotificationPrivacy.Public,
-            defaultRingtoneType: DefaultRingtoneType.Alarm,
-            locked: true,
-            defaultColor: Colors.blue,
-            ledColor: Colors.blue,
-            enableVibration: true,
-            playSound: true,
-            criticalAlerts: true,
-          )
-        ],
-        debug: true
-      );
+          null,
+          [
+            NotificationChannel(
+              channelKey: 'scheduled_channel',
+              channelName: 'Scheduled Notifications',
+              channelDescription: 'Scheduled notifications for reminders',
+              importance: NotificationImportance.High,
+              defaultPrivacy: NotificationPrivacy.Public,
+              defaultRingtoneType: DefaultRingtoneType.Alarm,
+              locked: false,
+              defaultColor: Colors.blue,
+              ledColor: Colors.blue,
+              enableVibration: true,
+              playSound: true,
+              criticalAlerts: true,
+            )
+          ],
+          debug: true);
 
       await _requestRequiredPermissions();
       print('通知服务初始化成功');
@@ -62,6 +61,62 @@ class NotificationService {
     }
   }
 
+  Future<void> createReminderNotification({
+    required int id,
+    required String title,
+    String? body,
+    bool isOverdue = false,
+    DateTime? scheduleTime,
+  }) async {
+    try {
+      final content = NotificationContent(
+        id: id,
+        channelKey: 'scheduled_channel',
+        title: isOverdue ? '逾期提醒: $title' : title,
+        body: body ?? '',
+        category: isOverdue ? NotificationCategory.Alarm : NotificationCategory.Reminder,
+        wakeUpScreen: true,
+        fullScreenIntent: true,
+        autoDismissible: true,
+        locked: true,
+        criticalAlert: true,
+        notificationLayout: NotificationLayout.Default,
+        displayOnForeground: true,
+      );
+
+      final actionButtons = [
+        NotificationActionButton(
+          key: 'MARK_COMPLETED',
+          label: '标记完成',
+          actionType: ActionType.DismissAction,
+        ),
+      ];
+
+      if (scheduleTime != null) {
+        await AwesomeNotifications().createNotification(
+          content: content,
+          schedule: NotificationCalendar.fromDate(
+            date: scheduleTime,
+            preciseAlarm: true,
+            allowWhileIdle: true,
+            repeats: false,
+          ),
+          actionButtons: actionButtons,
+        );
+      } else {
+        await AwesomeNotifications().createNotification(
+          content: content,
+          actionButtons: actionButtons,
+        );
+      }
+
+      print('通知创建成功: ID=$id');
+    } catch (e) {
+      print('创建通知失败: $e');
+      rethrow;
+    }
+  }
+
   Future<void> scheduleReminder(Reminder reminder) async {
     if (reminder.id == null || reminder.dueDate == null) return;
 
@@ -71,39 +126,12 @@ class NotificationService {
       return;
     }
 
-    try {
-      print('准备设置提醒:');
-      print('ID: ${reminder.id}');
-      print('标题: ${reminder.title}');
-      print('时间: ${reminder.dueDate}');
-
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: reminder.id!,
-          channelKey: 'scheduled_channel',
-          title: reminder.title,
-          body: reminder.notes ?? '',
-          category: NotificationCategory.Alarm,
-          wakeUpScreen: true,
-          fullScreenIntent: true,
-          autoDismissible: false,
-          locked: true,
-          criticalAlert: true,
-          notificationLayout: NotificationLayout.Default,
-        ),
-        schedule: NotificationCalendar.fromDate(
-          date: reminder.dueDate!,
-          preciseAlarm: true,
-          allowWhileIdle: true,
-          repeats: false,
-        ),
-      );
-
-      print('提醒设置成功');
-    } catch (e) {
-      print('设置提醒失败: $e');
-      rethrow;
-    }
+    await createReminderNotification(
+      id: reminder.id!,
+      title: reminder.title,
+      body: reminder.notes,
+      scheduleTime: reminder.dueDate,
+    );
   }
 
   Future<void> cancelReminder(int id) async {
@@ -125,4 +153,4 @@ class NotificationService {
       rethrow;
     }
   }
-} 
+}

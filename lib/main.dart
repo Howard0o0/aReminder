@@ -69,7 +69,7 @@ class ForegroundTaskHandler extends TaskHandler {
 
   @override
   void onRepeatEvent(DateTime timestamp) {
-    print('Foreground service is running...');
+    // print('Foreground service is running...');
   }
 
   @override
@@ -97,7 +97,8 @@ void main() async {
 
   try {
     // 初始化通知服务
-    await NotificationService().initialize();
+    final notificationService = NotificationService();
+    await notificationService.initialize();
 
     // 设置通知监听
     await AwesomeNotifications().setListeners(
@@ -111,7 +112,7 @@ void main() async {
     );
 
     // 应用启动时，扫描所有提醒事项
-    final provider = RemindersProvider();
+    final provider = await RemindersProvider.getInstance();
     await provider.loadReminders();
 
     // 检查逾期未完成的提醒事项
@@ -125,16 +126,12 @@ void main() async {
 
     // 发送逾期通知
     for (var reminder in overdueReminders) {
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: reminder.id!,
-          channelKey: 'scheduled_channel',
-          title: '逾期提醒: ${reminder.title}',
-          body: '该提醒事项已逾期',
-          category: NotificationCategory.Alarm,
-          locked: true,
-          autoDismissible: false,
-        ),
+      print('创建逾期通知: ${reminder.id}');
+      await notificationService.createReminderNotification(
+        id: reminder.id!,
+        title: reminder.title,
+        body: '该提醒事项已逾期',
+        isOverdue: true,
       );
     }
 
@@ -147,7 +144,7 @@ void main() async {
         .toList();
 
     for (var reminder in futureReminders) {
-      await NotificationService().scheduleReminder(reminder);
+      await notificationService.scheduleReminder(reminder);
     }
   } catch (e) {
     print('初始化失败: $e');
@@ -199,19 +196,43 @@ Future<void> _requestBatteryOptimization() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return WithForegroundTask(
-      // 包装整个应用
-      child: ChangeNotifierProvider(
-        create: (_) => RemindersProvider(),
-        child: const CupertinoApp(
-          title: 'iReminder',
-          theme: CupertinoThemeData(
-            primaryColor: CupertinoColors.activeBlue,
-          ),
-          home: HomeScreen(),
-        ),
+      child: FutureBuilder<RemindersProvider>(
+        future: RemindersProvider.getInstance(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CupertinoApp(
+              home: Center(
+                child: CupertinoActivityIndicator(),
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return CupertinoApp(
+              home: Center(
+                child: Text('错误: ${snapshot.error}'),
+              ),
+            );
+          }
+
+          return ChangeNotifierProvider.value(
+            value: snapshot.data!,
+            child: CupertinoApp(
+              navigatorKey: navigatorKey,
+              title: 'iReminder',
+              theme: const CupertinoThemeData(
+                primaryColor: CupertinoColors.activeBlue,
+              ),
+              home: const HomeScreen(),
+            ),
+          );
+        },
       ),
     );
   }
