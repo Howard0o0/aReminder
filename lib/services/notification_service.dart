@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/reminder.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/toast_utils.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -122,7 +123,7 @@ class NotificationService {
 
     final now = DateTime.now();
     if (reminder.dueDate!.isBefore(now)) {
-      print('提醒时间已过: ${reminder.dueDate}');
+      ToastUtils.show('请选择一个未来的时间');
       return;
     }
 

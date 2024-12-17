@@ -142,11 +142,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
           ),
         );
       }
-
-      if (mounted) {
-        Navigator.pop(context);
-      }
-      return;
     }
 
     final updatedReminder = Reminder(

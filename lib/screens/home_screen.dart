@@ -31,6 +31,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    setState(() {});
+  }
+
+  @override
   void dispose() {
     _newReminderController.dispose();
     _focusNode.dispose();
@@ -167,11 +174,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               decoration: const BoxDecoration(
                                 border: Border(
-                                  top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
-                                  bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+                                  top: BorderSide(
+                                      color: Color(0xFFE5E5EA), width: 0.5),
+                                  bottom: BorderSide(
+                                      color: Color(0xFFE5E5EA), width: 0.5),
                                 ),
                               ),
                               child: CupertinoTextField(
@@ -184,18 +194,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 style: TextStyle(fontSize: 17),
                                 decoration: null,
-                                onSubmitted: (value) => _handleSubmitted(value, provider),
+                                onSubmitted: (value) =>
+                                    _handleSubmitted(value, provider),
                               ),
                             ),
                             Container(
                               height: 44,
                               decoration: const BoxDecoration(
                                 border: Border(
-                                  bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+                                  bottom: BorderSide(
+                                      color: Color(0xFFE5E5EA), width: 0.5),
                                 ),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
                                   _buildToolbarButton(CupertinoIcons.calendar),
                                   _buildToolbarButton(CupertinoIcons.bell),
@@ -223,7 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       top: false,
                       child: Container(
                         height: 60,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         child: CupertinoButton(
                           padding: EdgeInsets.zero,
                           color: CupertinoColors.activeBlue,
@@ -285,24 +299,25 @@ class _HomeScreenState extends State<HomeScreen> {
       confirmDismiss: (direction) async {
         // 显示确认对话框
         return await showCupertinoDialog<bool>(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('删除提醒'),
-            content: const Text('确定要删除这个提醒吗？'),
-            actions: [
-              CupertinoDialogAction(
-                isDestructiveAction: true,
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('删除'),
+              context: context,
+              builder: (context) => CupertinoAlertDialog(
+                title: const Text('删除提醒'),
+                content: const Text('确定要删除这个提醒吗？'),
+                actions: [
+                  CupertinoDialogAction(
+                    isDestructiveAction: true,
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('删除'),
+                  ),
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('取消'),
+                  ),
+                ],
               ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('取消'),
-              ),
-            ],
-          ),
-        ) ?? false;
+            ) ??
+            false;
       },
       onDismissed: (direction) {
         // 删除提醒
