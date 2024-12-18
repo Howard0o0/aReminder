@@ -124,7 +124,7 @@ class NotificationService {
 
     final now = DateTime.now();
     if (reminder.dueDate!.isBefore(now)) {
-      ToastUtils.show('请选择一个未来的时间');
+      // ToastUtils.show('请选择一个未来的时间');
       return;
     }
 
