@@ -262,44 +262,47 @@ class _HomeScreenState extends State<HomeScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // CupertinoButton(
-                //   padding: EdgeInsets.zero,
-                //   child: const Icon(CupertinoIcons.share),
-                //   onPressed: () {
-                //     // TODO: 实现分享功能
-                //   },
-                // ),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Icon(CupertinoIcons.ellipsis_circle),
-                  onPressed: () {
-                    showCupertinoModalPopup(
-                      context: context,
-                      builder: (context) => CupertinoActionSheet(
-                        actions: [
-                          CupertinoActionSheetAction(
-                            child: const Text('个人中心'),
+                if (_isAddingNewReminder)
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text(
+                      '完成',
+                      style: TextStyle(fontSize: 17),
+                    ),
+                    onPressed: () => _saveNewReminder(provider),
+                  )
+                else
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Icon(CupertinoIcons.ellipsis_circle),
+                    onPressed: () {
+                      showCupertinoModalPopup(
+                        context: context,
+                        builder: (context) => CupertinoActionSheet(
+                          actions: [
+                            CupertinoActionSheetAction(
+                              child: const Text('个人中心'),
+                              onPressed: () {
+                                Navigator.pop(context); // 关闭弹出菜单
+                                Navigator.push(
+                                  context,
+                                  CupertinoPageRoute(
+                                    builder: (context) => const ProfileScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                          cancelButton: CupertinoActionSheetAction(
+                            child: const Text('取消'),
                             onPressed: () {
-                              Navigator.pop(context); // 关闭弹出菜单
-                              Navigator.push(
-                                context,
-                                CupertinoPageRoute(
-                                  builder: (context) => const ProfileScreen(),
-                                ),
-                              );
+                              Navigator.pop(context);
                             },
                           ),
-                        ],
-                        cancelButton: CupertinoActionSheetAction(
-                          child: const Text('取消'),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
