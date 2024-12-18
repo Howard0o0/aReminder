@@ -244,10 +244,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   });
                 }
               },
-              child: CupertinoButton(
+              child: const CupertinoButton(
                 padding: EdgeInsets.zero,
-                child: const Text('列表'),
                 onPressed: null,
+                child: Row(
+                  children: [
+                    Icon(CupertinoIcons.left_chevron,
+                        size: 17, color: CupertinoColors.black),
+                    Text('列表',
+                        style: TextStyle(
+                            fontSize: 17, color: CupertinoColors.black)),
+                  ],
+                ),
               ),
             ),
             middle: const Text('提醒事项'),
@@ -431,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final dateToCheck = DateTime(date.year, date.month, date.day);
 
     if (dateToCheck == today) {
-      return DateFormat('HH:mm').format(date);
+      return '今天 ${DateFormat('HH:mm').format(date)}';
     } else if (dateToCheck == yesterday) {
       return '昨天 ${DateFormat('HH:mm').format(date)}';
     } else if (dateToCheck == dayBeforeYesterday) {
@@ -528,17 +536,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 color:
                     _animatingItems[reminder.id] == true || reminder.isCompleted
-                    ? CupertinoColors.activeBlue
-                    : CupertinoColors.white,
+                        ? CupertinoColors.activeBlue
+                        : CupertinoColors.white,
               ),
               child:
                   (_animatingItems[reminder.id] == true || reminder.isCompleted)
-                  ? const Icon(
-                      CupertinoIcons.checkmark,
-                      size: 14,
-                      color: CupertinoColors.white,
-                    )
-                  : null,
+                      ? const Icon(
+                          CupertinoIcons.checkmark,
+                          size: 14,
+                          color: CupertinoColors.white,
+                        )
+                      : null,
             ),
           ),
           title: Text(
