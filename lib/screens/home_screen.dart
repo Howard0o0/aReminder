@@ -27,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAddingNewReminder = false;
   bool _showCompletedItems = false;
 
+  // 添加一个 Map 来跟踪每个提醒事项的动画状态
+  final Map<int, bool> _animatingItems = {};
+
   @override
   void initState() {
     super.initState();
@@ -226,10 +229,9 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, provider, child) {
         return CupertinoPageScaffold(
           navigationBar: CupertinoNavigationBar(
-            leading: CupertinoButton(
-              padding: EdgeInsets.zero,
-              child: const Text('列表'),
-              onPressed: () async {
+            leading: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () async {
                 final result = await Navigator.push(
                   context,
                   CupertinoPageRoute(
@@ -242,6 +244,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   });
                 }
               },
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                child: const Text('列表'),
+                onPressed: null,
+              ),
             ),
             middle: const Text('提醒事项'),
             trailing: Row(
@@ -490,23 +497,42 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CupertinoListTile(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: GestureDetector(
-            onTap: () => provider.toggleComplete(reminder),
+            onTap: () {
+              // 如果已经在动画中，直接返回
+              if (_animatingItems[reminder.id] == true) return;
+
+              setState(() {
+                _animatingItems[reminder.id!] = true;
+              });
+
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  provider.toggleComplete(reminder);
+                  setState(() {
+                    _animatingItems[reminder.id!] = false;
+                  });
+                }
+              });
+            },
             child: Container(
               width: 22,
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: reminder.isCompleted
+                  color: _animatingItems[reminder.id] == true ||
+                          reminder.isCompleted
                       ? CupertinoColors.activeBlue
                       : Color(0xFFD1D1D6),
                   width: 1.5,
                 ),
-                color: reminder.isCompleted
+                color:
+                    _animatingItems[reminder.id] == true || reminder.isCompleted
                     ? CupertinoColors.activeBlue
                     : CupertinoColors.white,
               ),
-              child: reminder.isCompleted
+              child:
+                  (_animatingItems[reminder.id] == true || reminder.isCompleted)
                   ? const Icon(
                       CupertinoIcons.checkmark,
                       size: 14,
