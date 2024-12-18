@@ -10,6 +10,8 @@ import 'controllers/notification_controller.dart';
 import 'dart:convert';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'dart:io';
+import 'providers/auth_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // 后台任务回调函数
 @pragma('vm:entry-point')
@@ -54,7 +56,7 @@ void callbackDispatcher() {
   });
 }
 
-// 添加前台任务处理函数
+// 添加前台任务处理函��
 @pragma('vm:entry-point')
 void startForegroundTask() {
   FlutterForegroundTask.setTaskHandler(ForegroundTaskHandler());
@@ -202,37 +204,46 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WithForegroundTask(
-      child: FutureBuilder<RemindersProvider>(
-        future: RemindersProvider.getInstance(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CupertinoApp(
-              home: Center(
-                child: CupertinoActivityIndicator(),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+            create: (_) => AuthProvider(),
+          ),
+        ],
+        child: FutureBuilder<RemindersProvider>(
+          future: RemindersProvider.getInstance(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CupertinoApp(
+                home: Center(
+                  child: CupertinoActivityIndicator(),
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return CupertinoApp(
+                home: Center(
+                  child: Text('错误: ${snapshot.error}'),
+                ),
+              );
+            }
+
+            return ChangeNotifierProvider.value(
+              value: snapshot.data!,
+              child: CupertinoApp(
+                navigatorKey: navigatorKey,
+                title: 'iReminder',
+                theme: const CupertinoThemeData(
+                  primaryColor: CupertinoColors.activeBlue,
+                ),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: const HomeScreen(),
               ),
             );
-          }
-
-          if (snapshot.hasError) {
-            return CupertinoApp(
-              home: Center(
-                child: Text('错误: ${snapshot.error}'),
-              ),
-            );
-          }
-
-          return ChangeNotifierProvider.value(
-            value: snapshot.data!,
-            child: CupertinoApp(
-              navigatorKey: navigatorKey,
-              title: 'iReminder',
-              theme: const CupertinoThemeData(
-                primaryColor: CupertinoColors.activeBlue,
-              ),
-              home: const HomeScreen(),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

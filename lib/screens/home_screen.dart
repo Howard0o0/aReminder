@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart'; // 添加这一行
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +9,9 @@ import '../models/reminder.dart';
 import 'add_reminder_screen.dart';
 import '../widgets/reminder_details_sheet.dart';
 import 'lists_screen.dart';
+import 'profile_screen.dart';
+import '../services/version_service.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RemindersProvider>().loadReminders();
     });
+    _checkVersion();
   }
 
   @override
@@ -42,6 +48,103 @@ class _HomeScreenState extends State<HomeScreen> {
     _newReminderController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkVersion() async {
+    final versionService = VersionService();
+    final isValid = await versionService.isVersionValid();
+
+    if (!isValid && mounted) {
+      _showForceUpdateDialog();
+      return;
+    }
+
+    final (hasNewVersion, comment) = await versionService.hasNewVersion();
+    if (hasNewVersion && mounted && comment != null) {
+      _showSoftUpdateDialog(comment);
+    }
+  }
+
+  void _showForceUpdateDialog() {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: CupertinoAlertDialog(
+          title: Text("需要更新版本"),
+          content: Text("旧版本已不再支持，请升级到新版继续使用"),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () async {
+                final url = Uri.parse(ApiService.officialWebsite);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+              },
+              child: const Text(
+                '去更新',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSoftUpdateDialog(String comment) {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: CupertinoAlertDialog(
+          title: Text('有新版本可更新',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black)),
+          content: Text(comment), // 使用服务器返回的更新说明
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                '忽略',
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+            CupertinoDialogAction(
+              onPressed: () async {
+                // TODO
+                final url = Uri.parse(ApiService.officialWebsite);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+              },
+              child: const Text(
+                '立即更新',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _startAddingNewReminder() {
@@ -120,18 +223,42 @@ class _HomeScreenState extends State<HomeScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Icon(CupertinoIcons.share),
-                  onPressed: () {
-                    // TODO: 实现分享功能
-                  },
-                ),
+                // CupertinoButton(
+                //   padding: EdgeInsets.zero,
+                //   child: const Icon(CupertinoIcons.share),
+                //   onPressed: () {
+                //     // TODO: 实现分享功能
+                //   },
+                // ),
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   child: const Icon(CupertinoIcons.ellipsis_circle),
                   onPressed: () {
-                    // TODO: 显示更多选项
+                    showCupertinoModalPopup(
+                      context: context,
+                      builder: (context) => CupertinoActionSheet(
+                        actions: [
+                          CupertinoActionSheetAction(
+                            child: const Text('个人中心'),
+                            onPressed: () {
+                              Navigator.pop(context); // 关闭弹出菜单
+                              Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                  builder: (context) => const ProfileScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                        cancelButton: CupertinoActionSheetAction(
+                          child: const Text('取消'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                    );
                   },
                 ),
               ],
