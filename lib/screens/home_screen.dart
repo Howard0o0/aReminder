@@ -151,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   bool isNotVipAndTodoRemindersOverflow() {
-    return context.read<AuthProvider>().user?.isVip == false &&
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    return auth.isVipValid() == false &&
         context.read<RemindersProvider>().incompleteReminders.length >= 10;
   }
 

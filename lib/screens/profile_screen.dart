@@ -199,6 +199,18 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return Scaffold(
       backgroundColor: CupertinoColors.systemBackground,
+      appBar: AppBar(
+        backgroundColor: CupertinoColors.systemBackground,
+        elevation: 0,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Icon(
+            CupertinoIcons.back,
+            color: CupertinoColors.black,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Consumer<AuthProvider>(
           builder: (context, auth, child) {
