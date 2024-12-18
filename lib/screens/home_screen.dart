@@ -316,6 +316,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   : provider.incompleteReminders.length,
                             ),
                           ),
+                          SliverToBoxAdapter(
+                            child: SizedBox(height: 76),
+                          ),
                         ],
                       ),
                     ),
