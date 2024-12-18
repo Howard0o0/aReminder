@@ -113,7 +113,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
             _selectedTime!.minute,
           );
         } else {
-          // 如果只选择了日期，默设置为当天早上 9 点
           dueDate = DateTime(
             _selectedDate!.year,
             _selectedDate!.month,
@@ -122,25 +121,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
             0,
           );
         }
-      }
-    }
-
-    // 检查时间是否已过
-    if (dueDate != null && dueDate.isBefore(DateTime.now())) {
-      if (mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('无效的时间'),
-            content: const Text('请选择一个未来的时间'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('确定'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
       }
     }
 
@@ -156,32 +136,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
     );
 
     widget.onUpdate(updatedReminder);
-    
-    // 先保存提醒事项，再设置通知
-    try {
-      if (dueDate != null) {
-        print('设置通知，时间：$dueDate');
-        await _scheduleNotification(updatedReminder);
-        print('通知设置成功');
-      }
-    } catch (e) {
-      print('设置通知失败: $e');
-      if (mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('通知设置失败'),
-            content: const Text('无法设置提醒通知，请检查通知权限'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('确定'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      }
-    }
 
     if (mounted) {
       Navigator.pop(context);
@@ -271,6 +225,8 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                                         _isTimePickerVisible = false;
                                       } else {
                                         _selectedDate = DateTime.now();
+                                        _isDatePickerVisible = true;
+                                        _isTimePickerVisible = false;
                                       }
                                     });
                                   },
@@ -320,8 +276,13 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                                     onChanged: (value) {
                                       setState(() {
                                         _hasTime = value;
-                                        if (value && _selectedTime == null) {
+                                        if (value) {
                                           _selectedTime = TimeOfDay.now();
+                                          _isTimePickerVisible = true;
+                                          _isDatePickerVisible = false;
+                                        } else {
+                                          _selectedTime = null;
+                                          _isTimePickerVisible = false;
                                         }
                                       });
                                     },
