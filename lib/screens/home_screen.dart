@@ -206,17 +206,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                       color: Color(0xFFE5E5EA), width: 0.5),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildToolbarButton(CupertinoIcons.calendar),
-                                  _buildToolbarButton(CupertinoIcons.bell),
-                                  _buildToolbarButton(CupertinoIcons.tag),
-                                  _buildToolbarButton(CupertinoIcons.flag),
-                                  _buildToolbarButton(CupertinoIcons.camera),
-                                ],
-                              ),
+                              // TODO
+                              // child: Row(
+                              //   mainAxisAlignment:
+                              //       MainAxisAlignment.spaceAround,
+                              //   children: [
+                              //     _buildToolbarButton(CupertinoIcons.calendar),
+                              //     _buildToolbarButton(CupertinoIcons.bell),
+                              //     _buildToolbarButton(CupertinoIcons.tag),
+                              //     _buildToolbarButton(CupertinoIcons.flag),
+                              //     _buildToolbarButton(CupertinoIcons.camera),
+                              //   ],
+                              // ),
                             ),
                           ],
                         ),
