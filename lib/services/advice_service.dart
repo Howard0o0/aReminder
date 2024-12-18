@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 class AdviceService {
-  // final String baseUrl = 'https://mirrorcamera.sharpofscience.top';
-  static const String baseUrl = 'http://192.168.5.11:56666';
+  static const String baseUrl = 'https://sharpofscience.top/common_service';
+  // static const String baseUrl = 'http://192.168.5.11:56666';
   final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   final BuildContext context;
 

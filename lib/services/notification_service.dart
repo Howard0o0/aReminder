@@ -74,7 +74,7 @@ class NotificationService {
       final content = NotificationContent(
         id: id,
         channelKey: 'scheduled_channel',
-        title: isOverdue ? '逾期提醒: $title' : title,
+        title: title,
         body: body ?? '',
         category: isOverdue ? NotificationCategory.Alarm : NotificationCategory.Reminder,
         wakeUpScreen: true,

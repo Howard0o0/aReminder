@@ -24,12 +24,12 @@ class ApiResponse<T> {
 }
 
 class ApiService {
-  // static const String baseUrl = 'https://sharpofscience.top/common_service';
-  static const String baseUrl = 'http://192.168.5.11:56666';
+  static const String baseUrl = 'https://sharpofscience.top/common_service';
+  // static const String baseUrl = 'http://192.168.5.11:56666';
   static const String appKey = 'aReminder';
 
   static const String officialWebsite =
-      'https://mirrorcamera.sharpofscience.top';
+      'http://areminder.sharpofscience.top/';
 
   // 处理 API 响应
   static ApiResponse<T> _handleResponse<T>(http.Response response,

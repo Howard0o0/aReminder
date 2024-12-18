@@ -132,7 +132,7 @@ void main() async {
       await notificationService.createReminderNotification(
         id: reminder.id!,
         title: reminder.title,
-        body: '该提醒事项已逾期',
+        body: reminder.notes,
         isOverdue: true,
       );
     }
@@ -233,7 +233,7 @@ class MyApp extends StatelessWidget {
               value: snapshot.data!,
               child: CupertinoApp(
                 navigatorKey: navigatorKey,
-                title: 'iReminder',
+                title: 'aReminder',
                 theme: const CupertinoThemeData(
                   primaryColor: CupertinoColors.activeBlue,
                 ),

@@ -6,9 +6,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../services/api_service.dart';
 
 class VersionService {
-  // static const String baseUrl =
-  //     'https://mirrorcamera.sharpofscience.top/api/v1';
-  static const String baseUrl = 'http://192.168.5.11:56666';
+  static const String baseUrl = 'https://sharpofscience.top/common_service';
+  // static const String baseUrl = 'http://192.168.5.11:56666';
 
   Future<bool> isVersionValid() async {
     try {

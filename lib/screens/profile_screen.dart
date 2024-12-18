@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../services/api_service.dart';
 import '../utils/toast_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -436,8 +437,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   onPressed: () {
                                     final locale =
                                         Localizations.localeOf(context);
-                                    final shareUrl =
-                                        "https://mirrorcamera.sharpofscience.top";
+                                    final shareUrl = ApiService.officialWebsite;
                                     Clipboard.setData(
                                         ClipboardData(text: shareUrl));
                                     ToastUtils.show(l10n.shareLinkCopied);
