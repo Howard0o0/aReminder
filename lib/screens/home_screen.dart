@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import '../providers/auth_provider.dart';
 import 'package:url_launcher/url_launcher.dart'; // 添加这一行
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -147,7 +148,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  bool isNotVipAndTodoRemindersOverflow() {
+    return context.read<AuthProvider>().user?.isVip == false &&
+        context.read<RemindersProvider>().incompleteReminders.length >= 10;
+  }
+
   void _startAddingNewReminder() {
+    if (isNotVipAndTodoRemindersOverflow()) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('待办提醒事项已满'),
+          content: const Text('非会员最多只能创建10个待办提醒事项\n请将一些待办事项删除或者标记为已完成~'),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.pop(context),
+              child: const Text('我知道了'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isAddingNewReminder = true;
     });

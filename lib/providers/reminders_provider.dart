@@ -31,6 +31,11 @@ class RemindersProvider with ChangeNotifier {
     return provider;
   }
 
+  // TODO
+  // 分成两个 _reminders
+  // 一个是 todoReminders
+  // 一个是 completedReminders
+
   List<Reminder> get reminders => _reminders;
   List<Reminder> get incompleteReminders => _reminders.where((r) => !r.isCompleted).toList();
   List<Reminder> get completedReminders => _reminders.where((r) => r.isCompleted).toList();
