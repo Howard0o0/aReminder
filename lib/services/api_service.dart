@@ -1,6 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../constants/error_codes.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dart:io' show Platform;
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import 'package:flutter/material.dart';
 
 class ApiResponse<T> {
   final bool success;
@@ -143,12 +150,31 @@ class ApiService {
 
   // 添加应用报告
   static Future<ApiResponse<void>> addAppReport(String report) async {
+    final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    // 获取设备信息
+    String deviceName = '';
+    String os = '';
+
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      deviceName = androidInfo.model;
+      os = 'Android ${androidInfo.version.release}';
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      deviceName = iosInfo.name;
+      os = '${iosInfo.systemName} ${iosInfo.systemVersion}';
+    }
+
+    String finalReport = report;
+    finalReport =
+        '[os: $os] [device: $deviceName] [device: $deviceName] $report';
+
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/v1/app/report').replace(
           queryParameters: {
-            'app_name': appKey,  // 使用 appKey 作为应用名称
-            'report': report,    // 报告内容
+            'app_name': appKey, // 使用 appKey 作为应用名称
+            'report': report, // 报告内容
           },
         ),
       );

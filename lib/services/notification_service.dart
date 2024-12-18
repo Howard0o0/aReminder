@@ -5,6 +5,7 @@ import '../models/reminder.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../utils/toast_utils.dart';
+import '../services/api_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -127,12 +128,17 @@ class NotificationService {
       return;
     }
 
+    await AwesomeNotifications().cancel(reminder.id!);
+    
     await createReminderNotification(
       id: reminder.id!,
       title: reminder.title,
       body: reminder.notes,
       scheduleTime: reminder.dueDate,
     );
+
+    ApiService.addAppReport(
+        'Success scheduled a reminder. [reminder: $reminder] [id: $reminder.id] [title: $reminder.title] [notes: $reminder.notes] [dueDate: $reminder.dueDate]');
   }
 
   Future<void> cancelReminder(int id) async {

@@ -2,7 +2,7 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import '../providers/reminders_provider.dart';
 import '../main.dart';
-
+import '../services/api_service.dart';
 class NotificationController {
   /// 当通知被创建时触发
   @pragma('vm:entry-point')
@@ -18,6 +18,8 @@ class NotificationController {
       ReceivedNotification receivedNotification) async {
     // 可以在这里添加日志
     print('通知已显示: ${receivedNotification.title}');
+    ApiService.addAppReport(
+        '通知已显示. [id: ${receivedNotification.id}] [title: ${receivedNotification.title}] [body: ${receivedNotification.body}]');
   }
 
   /// 当用户点击通知时触发

@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/reminders_provider.dart';
 import '../models/reminder.dart';
-import 'add_reminder_screen.dart';
 import '../widgets/reminder_details_sheet.dart';
 import 'lists_screen.dart';
 import 'profile_screen.dart';
