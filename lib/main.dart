@@ -148,6 +148,8 @@ void main() async {
     for (var reminder in futureReminders) {
       await notificationService.scheduleReminder(reminder);
     }
+
+    notificationService.updateBadgeCount(overdueReminders.length);
   } catch (e) {
     print('初始化失败: $e');
   }

@@ -11,6 +11,7 @@ import '../utils/logger.dart';
 import 'package:flutter/services.dart';
 import 'get_membership_screen.dart';
 import '../services/advice_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 const deviderThickness = 0.15;
 const deviderHeight = 15.0;
@@ -189,6 +190,31 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showVersionDialog(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    if (!mounted) return;
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('版本信息'),
+        content: Text('${packageInfo.version} (${packageInfo.buildNumber})'),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+            isDefaultAction: true,
+            textStyle: const TextStyle(
+              color: CupertinoColors.black,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -703,6 +729,37 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     endIndent: 16,
                                   ),
                                 ],
+
+                                // 在联系我们按钮后面添加版本按钮
+                                CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  onPressed: () => _showVersionDialog(context),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        CupertinoIcons.info_circle,
+                                        color: CupertinoColors.black,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '版本信息',
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          color: CupertinoColors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(
+                                  height: deviderHeight,
+                                  thickness: deviderThickness,
+                                  color: CupertinoColors.separator,
+                                  indent: 16,
+                                  endIndent: 16,
+                                ),
                               ],
                             ),
                           ),

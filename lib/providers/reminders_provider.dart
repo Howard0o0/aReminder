@@ -48,6 +48,14 @@ class RemindersProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateBadgeCount() async {
+    // 计算逾期且未完成的提醒数量
+    final overdueCount = incompleteReminders
+        .where((r) => r.dueDate?.isBefore(DateTime.now()) ?? false)
+        .length;
+    _notifications.updateBadgeCount(overdueCount);
+  }
+
   Future<void> addReminder(Reminder reminder) async {
     final id = await _db.insertReminder(reminder);
     final newReminder = Reminder(
@@ -68,6 +76,7 @@ class RemindersProvider with ChangeNotifier {
     print('Reminder added: ${newReminder.id}');
     ApiService.addAppReport(
         '成功添加一个提醒事项. [reminder: $newReminder] [id: $newReminder.id] [title: $newReminder.title] [notes: $newReminder.notes] [dueDate: $newReminder.dueDate]');
+    updateBadgeCount();
   }
 
   Future<void> updateReminder(Reminder reminder) async {
@@ -85,6 +94,8 @@ class RemindersProvider with ChangeNotifier {
     print('Reminder updated: ${reminder.id}');
     ApiService.addAppReport(
         '成功更新一个提醒事项. [reminder: $reminder] [id: $reminder.id] [title: $reminder.title] [notes: $reminder.notes] [dueDate: $reminder.dueDate]');
+
+    updateBadgeCount();
   }
 
   Future<void> deleteReminder(int id) async {
@@ -98,6 +109,7 @@ class RemindersProvider with ChangeNotifier {
       notifyListeners();
 
       print('提醒已删除: ID=$id');
+      updateBadgeCount();
     } catch (e) {
       print('删除提醒失败: $e');
       rethrow;
@@ -116,7 +128,7 @@ class RemindersProvider with ChangeNotifier {
       title: reminder.title,
       notes: reminder.notes,
       dueDate: reminder.dueDate,
-      isCompleted: !reminder.isCompleted,
+      isCompleted: true,
       priority: reminder.priority,
       list: reminder.list,
     );
@@ -163,7 +175,7 @@ class RemindersProvider with ChangeNotifier {
 
       // 创建新的到期时间
       final newDueDate = DateTime.now().add(duration);
-      
+
       final updatedReminder = Reminder(
         id: reminder.id,
         title: reminder.title,

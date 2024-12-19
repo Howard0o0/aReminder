@@ -12,6 +12,7 @@ import 'lists_screen.dart';
 import 'profile_screen.dart';
 import '../services/version_service.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,6 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() async {
+      await NotificationService().requestRequiredPermissions();
+    });
     // 加载已有的提醒事项
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RemindersProvider>().loadReminders();
