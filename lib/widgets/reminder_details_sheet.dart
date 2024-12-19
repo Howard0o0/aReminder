@@ -147,7 +147,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
     return Container(
       padding: const EdgeInsets.only(top: 8),
       decoration: const BoxDecoration(
-        color: CupertinoColors.systemBackground,
+        color: CupertinoColors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: Column(
@@ -188,7 +188,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                   CupertinoListSection.insetGrouped(
                     children: [
                       Container(
-                        color: CupertinoColors.systemBackground,
+                        color: CupertinoColors.white,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
@@ -238,7 +238,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                       ),
                       if (_hasDate)
                         Container(
-                          color: CupertinoColors.systemBackground,
+                          color: CupertinoColors.white,
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () {

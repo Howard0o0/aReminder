@@ -18,7 +18,7 @@ allprojects {
                     
                     // 可选：添加最小和目标 SDK 版本
                     defaultConfig {
-                        minSdkVersion 21
+                        minSdkVersion 23
                         // targetSdkVersion 34  // 或者使用 34
                         targetSdkVersion 33  // 或者使用 34
                     }

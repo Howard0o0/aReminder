@@ -236,6 +236,14 @@ class MyApp extends StatelessWidget {
                 title: 'aReminder',
                 theme: const CupertinoThemeData(
                   primaryColor: CupertinoColors.activeBlue,
+                  brightness: Brightness.light,
+                  scaffoldBackgroundColor: CupertinoColors.systemBackground,
+                  barBackgroundColor: CupertinoColors.systemBackground,
+                  textTheme: CupertinoTextThemeData(
+                    textStyle: TextStyle(
+                      color: CupertinoColors.black,
+                    ),
+                  ),
                 ),
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
