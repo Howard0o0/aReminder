@@ -48,13 +48,18 @@ class NotificationController {
   @pragma('vm:entry-point')
   static Future<void> onDismissActionReceivedMethod(
       ReceivedAction receivedAction) async {
+
     print('onDismissActionReceivedMethod 被调用');
+    print('receivedAction.actionType: ${receivedAction.actionType}');
+
+
     final reminderId = receivedAction.id;
     if (reminderId == null) return;
 
     // 获取初始化完成的 provider 实例
     final provider = await RemindersProvider.getInstance();
-    await provider.markReminderAsCompleted(reminderId);
-    print('提醒已被删除并标记为完成: $reminderId');
+    // 设置推迟1小时
+    await provider.postponeReminder(reminderId, const Duration(hours: 1));
+    print('提醒已被推迟1小时: $reminderId');
   }
 }

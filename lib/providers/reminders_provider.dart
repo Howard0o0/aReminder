@@ -155,4 +155,33 @@ class RemindersProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> postponeReminder(int id, Duration duration) async {
+    try {
+      final reminder = _reminders.firstWhere((r) => r.id == id);
+      print('找到提醒: ${reminder.id}');
+
+      // 创建新的到期时间
+      final newDueDate = DateTime.now().add(duration);
+      
+      final updatedReminder = Reminder(
+        id: reminder.id,
+        title: reminder.title,
+        notes: reminder.notes,
+        dueDate: newDueDate,
+        isCompleted: reminder.isCompleted,
+        priority: reminder.priority,
+        list: reminder.list,
+      );
+
+      await updateReminder(updatedReminder);
+
+      print('提醒已推迟 ${duration.inMinutes} 分钟: ID=$id');
+      ApiService.addAppReport(
+          '提醒已推迟. [reminder: $reminder] [id: $reminder.id] [title: $reminder.title] [推迟时间: ${duration.inMinutes}分钟] [newDueDate: $newDueDate]');
+    } catch (e) {
+      print('推迟提醒失败: $e');
+      rethrow;
+    }
+  }
 }

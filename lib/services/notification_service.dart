@@ -76,10 +76,10 @@ class NotificationService {
         channelKey: 'scheduled_channel',
         title: title,
         body: body ?? '',
-        category: isOverdue ? NotificationCategory.Alarm : NotificationCategory.Reminder,
+        category: NotificationCategory.Reminder,
         wakeUpScreen: true,
         fullScreenIntent: true,
-        autoDismissible: true,
+        autoDismissible: false,
         locked: true,
         criticalAlert: true,
         notificationLayout: NotificationLayout.Default,
@@ -90,7 +90,7 @@ class NotificationService {
         NotificationActionButton(
           key: 'MARK_COMPLETED',
           label: '标记完成',
-          actionType: ActionType.DismissAction,
+          actionType: ActionType.SilentAction,
         ),
       ];
 

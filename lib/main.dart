@@ -123,7 +123,7 @@ void main() async {
         .where((reminder) =>
             !reminder.isCompleted &&
             reminder.dueDate != null &&
-            reminder.dueDate!.isBefore(now))
+            !reminder.dueDate!.isAfter(now))
         .toList();
 
     // 发送逾期通知
