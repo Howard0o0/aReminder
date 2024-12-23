@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../models/reminder.dart';
 import '../services/notification_service.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -27,8 +26,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
   bool _hasTime = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  final FlutterLocalNotificationsPlugin _notifications =
-      FlutterLocalNotificationsPlugin();
   bool _isDatePickerVisible = false;
   bool _isTimePickerVisible = false;
 
@@ -47,7 +44,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
         _selectedTime = TimeOfDay.fromDateTime(widget.reminder.dueDate!);
       }
     }
-    _initializeNotifications();
   }
 
   @override
@@ -56,21 +52,6 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
     _notesController.dispose();
     _urlController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeNotifications() async {
-    const initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initializationSettingsIOS = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    const initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
-    await _notifications.initialize(initializationSettings);
   }
 
   Future<void> _scheduleNotification(Reminder reminder) async {

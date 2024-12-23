@@ -9,6 +9,7 @@ import '../utils/toast_utils.dart';
 import '../services/api_service.dart';
 import 'package:app_settings/app_settings.dart';
 import '../main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -61,62 +62,148 @@ class NotificationService {
     }
   }
 
-  Future<void> requestRequiredPermissions() async {
-    final permissions = await AwesomeNotifications().checkPermissionList();
-    print('原始通知权限状态: $permissions');
-
-    final context = MyApp.navigatorKey.currentState?.context;
+  void showInstructionDialog(BuildContext context) {
+    final pageController = PageController();
+    int currentPage = 0;
 
     showCupertinoDialog(
-      context: context!,
+      context: context,
       barrierDismissible: false,
       builder: (context) => PopScope(
         canPop: false,
-        child: CupertinoAlertDialog(
-          title: const Text("设置通知权限"),
-          content: const Text(
-            '''为了更好的使用体验
-请到设置里开启以下通知权限: 
-
-1. 锁屏通知: 在锁屏状态下显示通知
-2. 横幅通知: 在屏幕顶部显示通知
-3. 角标通知: 在应用图标上显示角标
-''',
-            textAlign: TextAlign.left,
+        child: StatefulBuilder(
+          builder: (context, setState) => CupertinoAlertDialog(
+            title: const Text("设置权限(很关键)"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 400,
+                  child: PageView(
+                    controller: pageController,
+                    onPageChanged: (index) {
+                      setState(() => currentPage = index);
+                    },
+                    children: [
+                      // 第一张图 - 通知权限设置
+                      Scrollbar(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              const Text(
+                                '华为为例: 设置-应用和服务-应用管理-aReminder-通知管理-提醒服务\n'
+                                '请开启以下通知权限:\n'
+                                '1. 锁屏通知\n'
+                                '2. 横幅通知',
+                                style: TextStyle(fontSize: 14),
+                                textAlign: TextAlign.left,
+                              ),
+                              const SizedBox(height: 10),
+                              Image.asset(
+                                'asset/image/huawei_notification.jpg',
+                                fit: BoxFit.contain,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // 第二张图 - 自启动权限设置
+                      Scrollbar(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              const Text(
+                                '华为为例: 设置-应用和服务-应用启动管理-aReminder\n'
+                                '请开启以下权限:\n'
+                                '1. 允许自启动\n'
+                                '2. 允许后台活动',
+                                style: TextStyle(fontSize: 14),
+                                textAlign: TextAlign.left,
+                              ),
+                              const SizedBox(height: 10),
+                              Image.asset(
+                                'asset/image/huawei_boot_manager.jpg',
+                                fit: BoxFit.contain,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // 自定义指示点
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    2,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: currentPage == index
+                            ? Colors.blue
+                            : Colors.grey.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () async {
+                  print('忽略');
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  '朕知道了',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black),
+                ),
+              ),
+              CupertinoDialogAction(
+                onPressed: () async {
+                  print('请求通知权限');
+                  AwesomeNotifications().requestPermissionToSendNotifications(
+                      channelKey: 'scheduled_channel');
+                },
+                child: const Text(
+                  '去设置',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black),
+                ),
+              ),
+            ],
           ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () async {
-                print('忽略');
-                Navigator.pop(context);
-              },
-              child: const Text(
-                '忽略',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black),
-              ),
-            ),
-            CupertinoDialogAction(
-              onPressed: () async {
-                print('请求通知权限');
-                AwesomeNotifications().requestPermissionToSendNotifications(
-                    channelKey: 'scheduled_channel');
-                Navigator.pop(context);
-              },
-              child: const Text(
-                '去设置',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black),
-              ),
-            ),
-          ],
         ),
       ),
     );
+  }
+
+  Future<void> requestRequiredPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+
+    if (isFirstLaunch || true) {
+      final permissions = await AwesomeNotifications().checkPermissionList();
+      print('原始通知权限状态: $permissions');
+
+      // final context = MyApp.navigatorKey.currentState?.context;
+      // if (context != null) {
+      //   showInstructionDialog(context);
+      // }
+
+      await prefs.setBool('is_first_launch', false);
+    }
 
     final deviceInfo = await DeviceInfoPlugin().androidInfo;
     final androidVersion = deviceInfo.version.sdkInt;
@@ -278,7 +365,7 @@ class NotificationService {
       await AwesomeNotifications().cancelAll();
       print('所有提醒已取消');
     } catch (e) {
-      print('��消所有提醒失败: $e');
+      print('取消所有提醒失败: $e');
       rethrow;
     }
   }

@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'get_membership_screen.dart';
 import '../services/advice_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const deviderThickness = 0.15;
 const deviderHeight = 15.0;
@@ -730,7 +731,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ),
                                 ],
 
-                                // 在联系我们按钮后面添加版本按钮
+                                // 在联系我们按钮后面添加版本���钮
                                 CupertinoButton(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 12),
@@ -746,6 +747,48 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       Text(
                                         '版本信息',
                                         style: const TextStyle(
+                                          fontSize: 15,
+                                          color: CupertinoColors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(
+                                  height: deviderHeight,
+                                  thickness: deviderThickness,
+                                  color: CupertinoColors.separator,
+                                  indent: 16,
+                                  endIndent: 16,
+                                ),
+
+                                // 在联系我们后面添加小红书关注按钮
+                                CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  onPressed: () async {
+                                    const url =
+                                        'https://www.xiaohongshu.com/user/profile/67399a09000000001c019fde';
+                                    final uri = Uri.parse(url);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri,
+                                          mode: LaunchMode.externalApplication);
+                                    } else {
+                                      if (!context.mounted) return;
+                                      ToastUtils.show('无法打开链接');
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        CupertinoIcons.heart,
+                                        color: CupertinoColors.black,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        '在小红书上关注我们',
+                                        style: TextStyle(
                                           fontSize: 15,
                                           color: CupertinoColors.black,
                                         ),

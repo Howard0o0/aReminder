@@ -13,6 +13,7 @@ import 'profile_screen.dart';
 import '../services/version_service.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,15 +27,27 @@ class _HomeScreenState extends State<HomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isAddingNewReminder = false;
   bool _showCompletedItems = false;
+  bool _shouldHighlightInfo = false;
 
   // 添加一个 Map 来跟踪每个提醒事项的动画状态
   final Map<int, bool> _animatingItems = {};
+
+  final GlobalKey _infoButtonKey = GlobalKey(); // 添加这一行来获取按钮位置
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       await NotificationService().requestRequiredPermissions();
+      // 检查是否是首次启动
+      final prefs = await SharedPreferences.getInstance();
+      final hasShownInstruction =
+          prefs.getBool('has_shown_instruction') ?? false;
+      if (!hasShownInstruction) {
+        setState(() {
+          _shouldHighlightInfo = true;
+        });
+      }
     });
     // 加载已有的提醒事项
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -113,12 +126,14 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => PopScope(
         canPop: false,
         child: CupertinoAlertDialog(
-          title: Text('有新版本可更新',
-              style: const TextStyle(
+          title: const Text('有新版本可更新',
+              style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   color: Colors.black)),
-          content: Text(comment), // 使用服务器返回的更新说明
+          content: Text(comment,
+              textAlign: TextAlign.left,
+              style: const TextStyle(fontSize: 14)), // 使用服务器返回的更新说明
           actions: [
             CupertinoDialogAction(
               onPressed: () {
@@ -227,210 +242,257 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showInstruction() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_shown_instruction', true);
+    setState(() {
+      _shouldHighlightInfo = false;
+    });
+    NotificationService().showInstructionDialog(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<RemindersProvider>(
       builder: (context, provider, child) {
-        return CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            leading: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (context) => const ListsScreen(),
-                  ),
-                );
-                if (result != null) {
-                  setState(() {
-                    _showCompletedItems = result;
-                  });
-                }
-              },
-              child: const CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: null,
-                child: Row(
-                  children: [
-                    Icon(CupertinoIcons.left_chevron,
-                        size: 17, color: CupertinoColors.black),
-                    Text('列表',
-                        style: TextStyle(
-                            fontSize: 17, color: CupertinoColors.black)),
-                  ],
-                ),
-              ),
-            ),
-            middle: const Text('提醒事项'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isAddingNewReminder)
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    child: const Text(
-                      '完成',
-                      style: TextStyle(fontSize: 17),
-                    ),
-                    onPressed: () => _saveNewReminder(provider),
-                  )
-                else
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    child: const Icon(CupertinoIcons.ellipsis_circle),
-                    onPressed: () {
-                      showCupertinoModalPopup(
-                        context: context,
-                        builder: (context) => CupertinoActionSheet(
-                          actions: [
-                            CupertinoActionSheetAction(
-                              child: const Text('个人中心'),
-                              onPressed: () {
-                                Navigator.pop(context); // 关闭弹出菜单
-                                Navigator.push(
-                                  context,
-                                  CupertinoPageRoute(
-                                    builder: (context) => const ProfileScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                          cancelButton: CupertinoActionSheetAction(
-                            child: const Text('取消'),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              SafeArea(
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: CustomScrollView(
-                        slivers: [
-                          CupertinoSliverRefreshControl(
-                            onRefresh: () => provider.loadReminders(),
-                          ),
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final items = _showCompletedItems
-                                    ? provider.completedReminders
-                                    : provider.incompleteReminders;
-                                return _buildReminderItem(
-                                  context,
-                                  items[index],
-                                  provider,
-                                );
-                              },
-                              childCount: _showCompletedItems
-                                  ? provider.completedReminders.length
-                                  : provider.incompleteReminders.length,
-                            ),
-                          ),
-                          SliverToBoxAdapter(
-                            child: SizedBox(height: 76),
-                          ),
-                        ],
+        return Stack(
+          children: [
+            CupertinoPageScaffold(
+              navigationBar: CupertinoNavigationBar(
+                leading: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => const ListsScreen(),
                       ),
+                    );
+                    if (result != null) {
+                      setState(() {
+                        _showCompletedItems = result;
+                      });
+                    }
+                  },
+                  child: const CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: null,
+                    child: Row(
+                      children: [
+                        Icon(CupertinoIcons.left_chevron,
+                            size: 17, color: CupertinoColors.black),
+                        Text('列表',
+                            style: TextStyle(
+                                fontSize: 17, color: CupertinoColors.black)),
+                      ],
                     ),
-                    if (_isAddingNewReminder) ...[
-                      Container(
-                        color: CupertinoColors.white,
-                        child: Column(
-                          children: [
-                            Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(
-                                      color: Color(0xFFE5E5EA), width: 0.5),
-                                  bottom: BorderSide(
-                                      color: Color(0xFFE5E5EA), width: 0.5),
-                                ),
-                              ),
-                              child: CupertinoTextField(
-                                controller: _newReminderController,
-                                focusNode: _focusNode,
-                                placeholder: '添加备注',
-                                placeholderStyle: TextStyle(
-                                  color: CupertinoColors.systemGrey,
-                                  fontSize: 17,
-                                ),
-                                style: TextStyle(fontSize: 17),
-                                decoration: null,
-                                onSubmitted: (value) =>
-                                    _handleSubmitted(value, provider),
-                              ),
-                            ),
-                            Container(
-                              height: 44,
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                      color: Color(0xFFE5E5EA), width: 0.5),
-                                ),
-                              ),
-                              // TODO
-                              // child: Row(
-                              //   mainAxisAlignment:
-                              //       MainAxisAlignment.spaceAround,
-                              //   children: [
-                              //     _buildToolbarButton(CupertinoIcons.calendar),
-                              //     _buildToolbarButton(CupertinoIcons.bell),
-                              //     _buildToolbarButton(CupertinoIcons.tag),
-                              //     _buildToolbarButton(CupertinoIcons.flag),
-                              //     _buildToolbarButton(CupertinoIcons.camera),
-                              //   ],
-                              // ),
-                            ),
-                          ],
+                  ),
+                ),
+                middle: const Text('提醒事项'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isAddingNewReminder)
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: const Text(
+                          '完成',
+                          style: TextStyle(fontSize: 17),
                         ),
+                        onPressed: () => _saveNewReminder(provider),
+                      )
+                    else ...[
+                      CupertinoButton(
+                        key: _infoButtonKey, // 添加 key
+                        padding: EdgeInsets.zero,
+                        child: const Icon(CupertinoIcons.info_circle),
+                        onPressed: _showInstruction,
+                      ),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: const Icon(CupertinoIcons.ellipsis_circle),
+                        onPressed: () {
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder: (context) => CupertinoActionSheet(
+                              actions: [
+                                CupertinoActionSheetAction(
+                                  child: const Text('个人中心'),
+                                  onPressed: () {
+                                    Navigator.pop(context); // 关闭弹出菜单
+                                    Navigator.push(
+                                      context,
+                                      CupertinoPageRoute(
+                                        builder: (context) =>
+                                            const ProfileScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                              cancelButton: CupertinoActionSheetAction(
+                                child: const Text('取消'),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ],
                 ),
               ),
-              if (!_isAddingNewReminder)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    color: CupertinoColors.systemBackground,
-                    child: SafeArea(
-                      top: false,
-                      child: Container(
-                        height: 60,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          color: CupertinoColors.activeBlue,
-                          borderRadius: BorderRadius.circular(10),
-                          child: const Text(
-                            '新提醒事项',
-                            style: TextStyle(fontSize: 17),
+              child: Stack(
+                children: [
+                  SafeArea(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: CustomScrollView(
+                            slivers: [
+                              CupertinoSliverRefreshControl(
+                                onRefresh: () => provider.loadReminders(),
+                              ),
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final items = _showCompletedItems
+                                        ? provider.completedReminders
+                                        : provider.incompleteReminders;
+                                    return _buildReminderItem(
+                                      context,
+                                      items[index],
+                                      provider,
+                                    );
+                                  },
+                                  childCount: _showCompletedItems
+                                      ? provider.completedReminders.length
+                                      : provider.incompleteReminders.length,
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: SizedBox(height: 76),
+                              ),
+                            ],
                           ),
-                          onPressed: _startAddingNewReminder,
+                        ),
+                        if (_isAddingNewReminder) ...[
+                          Container(
+                            color: CupertinoColors.white,
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  decoration: const BoxDecoration(
+                                    border: Border(
+                                      top: BorderSide(
+                                          color: Color(0xFFE5E5EA), width: 0.5),
+                                      bottom: BorderSide(
+                                          color: Color(0xFFE5E5EA), width: 0.5),
+                                    ),
+                                  ),
+                                  child: CupertinoTextField(
+                                    controller: _newReminderController,
+                                    focusNode: _focusNode,
+                                    placeholder: '添加备注',
+                                    placeholderStyle: TextStyle(
+                                      color: CupertinoColors.systemGrey,
+                                      fontSize: 17,
+                                    ),
+                                    style: TextStyle(fontSize: 17),
+                                    decoration: null,
+                                    onSubmitted: (value) =>
+                                        _handleSubmitted(value, provider),
+                                  ),
+                                ),
+                                Container(
+                                  height: 44,
+                                  decoration: const BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                          color: Color(0xFFE5E5EA), width: 0.5),
+                                    ),
+                                  ),
+                                  // TODO
+                                  // child: Row(
+                                  //   mainAxisAlignment:
+                                  //       MainAxisAlignment.spaceAround,
+                                  //   children: [
+                                  //     _buildToolbarButton(CupertinoIcons.calendar),
+                                  //     _buildToolbarButton(CupertinoIcons.bell),
+                                  //     _buildToolbarButton(CupertinoIcons.tag),
+                                  //     _buildToolbarButton(CupertinoIcons.flag),
+                                  //     _buildToolbarButton(CupertinoIcons.camera),
+                                  //   ],
+                                  // ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (!_isAddingNewReminder)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        color: CupertinoColors.systemBackground,
+                        child: SafeArea(
+                          top: false,
+                          child: Container(
+                            height: 60,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              color: CupertinoColors.activeBlue,
+                              borderRadius: BorderRadius.circular(10),
+                              child: const Text(
+                                '新提醒事项',
+                                style: TextStyle(fontSize: 17),
+                              ),
+                              onPressed: _startAddingNewReminder,
+                            ),
+                          ),
                         ),
                       ),
                     ),
+                ],
+              ),
+            ),
+            if (_shouldHighlightInfo)
+              GestureDetector(
+                onTap: _showInstruction,
+                child: CustomPaint(
+                  painter: HighlightPainter(_infoButtonKey),
+                  child: Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    alignment: Alignment.center,
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 100),
+                        Text(
+                          '首次使用请阅读说明',
+                          style: TextStyle(
+                            color: CupertinoColors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       },
     );
@@ -608,4 +670,53 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isOverdue(DateTime dueDate) {
     return dueDate.isBefore(DateTime.now());
   }
+}
+
+// 添加自定义画布类来绘制遮罩和高亮效果
+class HighlightPainter extends CustomPainter {
+  final GlobalKey targetKey;
+
+  HighlightPainter(this.targetKey);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withOpacity(0.7)
+      ..style = PaintingStyle.fill;
+
+    // 获取目标按钮的位置和大小
+    final RenderBox? renderBox =
+        targetKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final position = renderBox.localToGlobal(Offset.zero);
+    final buttonSize = renderBox.size;
+    final center = Offset(
+      position.dx + buttonSize.width / 2,
+      position.dy + buttonSize.height / 2,
+    );
+    final radius = buttonSize.width * 0.8;
+
+    // 创建一个路径来绘制遮罩
+    final path = Path()
+      ..addRect(Offset.zero & size) // 添加整个屏幕大小的矩形
+      ..addOval(Rect.fromCircle(center: center, radius: radius)) // 添加圆形
+      ..fillType = PathFillType.evenOdd; // 使用 evenOdd 规则，这样圆形区域会被"挖空"
+
+    // 绘制遮罩
+    canvas.drawPath(path, paint);
+
+    // 绘制高亮边框
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = CupertinoColors.activeBlue
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
