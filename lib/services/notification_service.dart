@@ -12,6 +12,7 @@ import '../main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_service.dart';
 import '../models/repeat_type.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -151,6 +152,44 @@ class NotificationService {
                             ? Colors.blue
                             : Colors.grey.withOpacity(0.5),
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // 添加小红书链接按钮
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    onPressed: () async {
+                      final url = 'http://xhslink.com/a/MxvPJFyPWIA2';
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url));
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          CupertinoIcons.arrow_right_circle_fill,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '去小红书看详细说明',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
