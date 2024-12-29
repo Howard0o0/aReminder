@@ -10,6 +10,8 @@ import '../services/api_service.dart';
 import 'package:app_settings/app_settings.dart';
 import '../main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/database_service.dart';
+import '../models/repeat_type.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -333,12 +335,12 @@ class NotificationService {
 
     final now = DateTime.now();
     if (reminder.dueDate!.isBefore(now)) {
-      // ToastUtils.show('请选择一个未来的时间');
       return;
     }
 
     await AwesomeNotifications().cancel(reminder.id!);
 
+    // 只创建当前提醒，不再自动调度下一次
     await createReminderNotification(
       id: reminder.id!,
       title: reminder.title,
@@ -347,7 +349,35 @@ class NotificationService {
     );
 
     ApiService.addAppReport(
-        'Success scheduled a reminder. [reminder: $reminder] [id: $reminder.id] [title: $reminder.title] [notes: $reminder.notes] [dueDate: $reminder.dueDate]');
+      'Scheduled a reminder. [reminder: $reminder]'
+    );
+  }
+
+  // 添加新方法用于处理重复提醒的重新调度
+  Future<void> rescheduleRepeatingReminder(Reminder reminder) async {
+    if (reminder.repeatType == null || reminder.repeatType == RepeatType.never) {
+      return;
+    }
+
+    final nextOccurrence = reminder.repeatType.getNextOccurrence(reminder.dueDate!);
+    if (nextOccurrence != null) {
+      final nextReminder = Reminder(
+        id: reminder.id,
+        title: reminder.title,
+        notes: reminder.notes,
+        url: reminder.url,
+        dueDate: nextOccurrence,
+        isCompleted: false,
+        priority: reminder.priority,
+        list: reminder.list,
+        repeatType: reminder.repeatType,
+      );
+      
+      // 更新数据库中的下一次提醒时间
+      await DatabaseService().updateReminder(nextReminder);
+      // 调度下一次提醒
+      await scheduleReminder(nextReminder);
+    }
   }
 
   Future<void> cancelReminder(int id) async {

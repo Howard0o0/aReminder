@@ -14,6 +14,7 @@ import '../services/version_service.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/repeat_type.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -523,6 +524,44 @@ class _HomeScreenState extends State<HomeScreen> {
     Reminder reminder,
     RemindersProvider provider,
   ) {
+    // 构建副标题组件
+    Widget? subtitle;
+    if (reminder.dueDate != null) {
+      final hasRepeat = reminder.repeatType != null &&
+          reminder.repeatType != RepeatType.never;
+      final textColor = _isOverdue(reminder.dueDate!)
+          ? CupertinoColors.systemRed
+          : CupertinoColors.systemGrey;
+
+      subtitle = Row(
+        children: [
+          Text(
+            _formatDate(reminder.dueDate),
+            style: TextStyle(
+              fontSize: 15,
+              color: textColor,
+            ),
+          ),
+          if (hasRepeat) ...[
+            const SizedBox(width: 4), // 添加小间距
+            Icon(
+              CupertinoIcons.repeat,
+              size: 14,
+              color: CupertinoColors.systemBlue,
+            ),
+            const SizedBox(width: 2), // 添加小间距
+            Text(
+              reminder.repeatType!.localizedName,
+              style: TextStyle(
+                fontSize: 15,
+                color: textColor,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return Dismissible(
       key: Key(reminder.id.toString()),
       direction: DismissDirection.endToStart, // 只允许从右向左滑动
@@ -630,17 +669,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   : CupertinoColors.black,
             ),
           ),
-          subtitle: reminder.dueDate != null
-              ? Text(
-                  _formatDate(reminder.dueDate),
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: _isOverdue(reminder.dueDate!)
-                        ? CupertinoColors.systemRed
-                        : CupertinoColors.systemGrey,
-                  ),
-                )
-              : null,
+          subtitle: subtitle,
           trailing: const Icon(
             CupertinoIcons.chevron_right,
             color: CupertinoColors.systemGrey3,

@@ -3,6 +3,7 @@ import '../models/reminder.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/api_service.dart';
+import '../models/repeat_type.dart';
 
 class RemindersProvider with ChangeNotifier {
   static RemindersProvider? _instance;
@@ -123,20 +124,18 @@ class RemindersProvider with ChangeNotifier {
       /// parameter, updates its completion status to the opposite of its current status, and
       /// then calls the `updateReminder` method to save the updated reminder to the database.
       toggleComplete(Reminder reminder) async {
-    final updatedReminder = Reminder(
-      id: reminder.id,
-      title: reminder.title,
-      notes: reminder.notes,
-      dueDate: reminder.dueDate,
-      isCompleted: true,
-      priority: reminder.priority,
-      list: reminder.list,
-    );
-
-    if (!reminder.isCompleted && updatedReminder.isCompleted) {
-      await _notifications.cancelReminder(reminder.id!);
+    if (reminder.repeatType != RepeatType.never && reminder.dueDate != null) {
+      print('处理重复提醒事项: ${reminder.id}');
+      // 计算下一次提醒时间
+      final nextDueDate =
+          reminder.repeatType.getNextOccurrence(reminder.dueDate!);
+      reminder.isCompleted = false;
+      reminder.dueDate = nextDueDate;
+      print('nextDueDate: $nextDueDate');
     }
-    await updateReminder(updatedReminder);
+
+    await _notifications.cancelReminder(reminder.id!);
+    await updateReminder(reminder);
     print('app 内标记为完成: ${reminder.id}');
     ApiService.addAppReport(
         'app 内标记为完成. [reminder: $reminder] [id: $reminder.id] [title: $reminder.title] [notes: $reminder.notes] [dueDate: $reminder.dueDate]');
@@ -147,17 +146,10 @@ class RemindersProvider with ChangeNotifier {
       final reminder = _reminders.firstWhere((r) => r.id == id);
       print('找到提醒: ${reminder.id}');
 
-      final updatedReminder = Reminder(
-        id: reminder.id,
-        title: reminder.title,
-        notes: reminder.notes,
-        dueDate: reminder.dueDate,
-        isCompleted: true,
-        priority: reminder.priority,
-        list: reminder.list,
-      );
+      var updatedReminder = reminder;
+      updatedReminder.isCompleted = true;
 
-      await updateReminder(updatedReminder);
+      await toggleComplete(updatedReminder);
 
       print('通知栏里标记为完成: ID=$id');
       ApiService.addAppReport(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import '../models/reminder.dart';
 import '../services/notification_service.dart';
 import 'package:timezone/timezone.dart' as tz;
+import '../models/repeat_type.dart';
+import 'repeat_type_picker.dart';
 
 class ReminderDetailsSheet extends StatefulWidget {
   final Reminder reminder;
@@ -28,6 +30,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
   TimeOfDay? _selectedTime;
   bool _isDatePickerVisible = false;
   bool _isTimePickerVisible = false;
+  late RepeatType _repeatType;
 
   @override
   void initState() {
@@ -44,6 +47,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
         _selectedTime = TimeOfDay.fromDateTime(widget.reminder.dueDate!);
       }
     }
+    _repeatType = widget.reminder.repeatType;
   }
 
   @override
@@ -114,6 +118,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
       isCompleted: widget.reminder.isCompleted,
       priority: widget.reminder.priority,
       list: widget.reminder.list,
+      repeatType: _repeatType,
     );
 
     widget.onUpdate(updatedReminder);
@@ -271,6 +276,40 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                                 ],
                               ),
                             ),
+                          ),
+                        ),
+                      if (_hasDate)
+                        Container(
+                          color: CupertinoColors.white,
+                          child: CupertinoListTile(
+                            title: const Text('重复'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _repeatType.localizedName,
+                                  style: const TextStyle(
+                                    color: CupertinoColors.systemBlue
+                                  ),
+                                ),
+                                const CupertinoListTileChevron(),
+                              ],
+                            ),
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                  builder: (context) => RepeatTypePicker(
+                                    initialValue: _repeatType,
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _repeatType = result;
+                                });
+                              }
+                            },
                           ),
                         ),
                     ],

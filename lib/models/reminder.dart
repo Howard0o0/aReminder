@@ -1,12 +1,15 @@
+import 'repeat_type.dart';
+
 class Reminder {
   final int? id;
-  final String title;
-  final String? notes;
-  final String? url;
-  final DateTime? dueDate;
-  final bool isCompleted;
-  final int priority;
-  final String? list;
+  String title;
+  String? notes;
+  String? url;
+  DateTime? dueDate;
+  bool isCompleted;
+  int priority;
+  String? list;
+  RepeatType repeatType;
 
   Reminder({
     this.id,
@@ -17,6 +20,7 @@ class Reminder {
     this.isCompleted = false,
     this.priority = 0,
     this.list,
+    this.repeatType = RepeatType.never,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,19 +33,48 @@ class Reminder {
       'isCompleted': isCompleted ? 1 : 0,
       'priority': priority,
       'list': list,
+      'repeatType': repeatType.name,
     };
   }
 
   factory Reminder.fromMap(Map<String, dynamic> map) {
     return Reminder(
-      id: map['id'] as int?,
-      title: map['title'] as String,
-      notes: map['notes'] as String?,
-      url: map['url'] as String?,
+      id: map['id'],
+      title: map['title'],
+      notes: map['notes'],
+      url: map['url'],
       dueDate: map['dueDate'] != null ? DateTime.parse(map['dueDate']) : null,
       isCompleted: map['isCompleted'] == 1,
-      priority: map['priority'] as int? ?? 0,
-      list: map['list'] as String?,
+      priority: map['priority'] ?? 0,
+      list: map['list'],
+      repeatType: RepeatType.values.firstWhere(
+        (e) => e.name == (map['repeatType'] ?? 'never'),
+        orElse: () => RepeatType.never,
+      ),
+    );
+  }
+
+  Reminder copyWith({
+    int? id,
+    String? title,
+    String? notes,
+    String? url,
+    DateTime? dueDate,
+    bool? isCompleted,
+    int? priority,
+    String? list,
+    RepeatType? repeatType,
+  }) {
+    return Reminder(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      url: url ?? this.url,
+      dueDate: dueDate ?? this.dueDate,
+      isCompleted: isCompleted ?? this.isCompleted,
+      priority: priority ?? this.priority,
+      list: list ?? this.list,
+      repeatType: repeatType ?? this.repeatType,
     );
   }
 

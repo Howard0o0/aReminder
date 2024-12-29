@@ -20,8 +20,9 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'reminders.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -36,10 +37,19 @@ class DatabaseService {
         isCompleted INTEGER NOT NULL DEFAULT 0,
         priority INTEGER NOT NULL DEFAULT 0,
         list TEXT,
+        repeatType TEXT NOT NULL DEFAULT 'never',
         createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE reminders ADD COLUMN repeatType TEXT NOT NULL DEFAULT "never"'
+      );
+    }
   }
 
   Future<int> insertReminder(Reminder reminder) async {
@@ -70,5 +80,20 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<Reminder?> getReminderById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'reminders',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    
+    if (maps.isEmpty) {
+      return null;
+    }
+    
+    return Reminder.fromMap(maps.first);
   }
 } 
