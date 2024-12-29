@@ -132,6 +132,8 @@ class RemindersProvider with ChangeNotifier {
       reminder.isCompleted = false;
       reminder.dueDate = nextDueDate;
       print('nextDueDate: $nextDueDate');
+    } else {
+      reminder.isCompleted = true;
     }
 
     await _notifications.cancelReminder(reminder.id!);
