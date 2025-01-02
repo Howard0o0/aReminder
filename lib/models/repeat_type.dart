@@ -1,5 +1,6 @@
 enum RepeatType {
   never,
+  hourly,
   daily,
   weekdays,
   weekends,
@@ -10,6 +11,8 @@ enum RepeatType {
     switch (this) {
       case RepeatType.never:
         return '永不';
+      case RepeatType.hourly:
+        return '每小时';
       case RepeatType.daily:
         return '每天';
       case RepeatType.weekdays:
@@ -29,6 +32,10 @@ enum RepeatType {
     final next = DateTime(from.year, from.month, from.day, from.hour, from.minute);
     
     switch (this) {
+      case RepeatType.never:
+        return null;
+      case RepeatType.hourly:
+        return next.add(const Duration(hours: 1));
       case RepeatType.daily:
         return next.add(const Duration(days: 1));
       
