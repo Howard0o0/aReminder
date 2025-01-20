@@ -13,6 +13,7 @@ import 'get_membership_screen.dart';
 import '../services/advice_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'orders_screen.dart';
 
 const deviderThickness = 0.15;
 const deviderHeight = 15.0;
@@ -314,18 +315,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            Text(
-                                              auth.isVipValid()
-                                                  ? l10n.vipValid
-                                                  : l10n.vipInvalid,
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                color: auth.isVipValid()
-                                                    ? CupertinoColors.black
-                                                    : CupertinoColors
-                                                        .secondaryLabel,
-                                              ),
-                                            ),
+                                            auth.isVipValid()
+                                                ? Image.asset(
+                                                    'asset/image/vip.png',
+                                                    width: 36,
+                                                    // height: 24,
+                                                    fit: BoxFit.contain,
+                                                  )
+                                                : Text(
+                                                    l10n.vipInvalid,
+                                                    style: TextStyle(
+                                                      fontSize: 15,
+                                                      color: auth.isVipValid()
+                                                          ? CupertinoColors
+                                                              .black
+                                                          : CupertinoColors
+                                                              .secondaryLabel,
+                                                    ),
+                                                  ),
                                             if (auth.isVipValid() &&
                                                 auth.vipExpireDate != null) ...[
                                               const SizedBox(width: 8),
@@ -420,17 +427,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             child: Column(
                               children: [
+                                // 获取会员按钮
                                 CupertinoButton(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 12),
-                                  onPressed: () {
-                                    Navigator.push(
+                                  onPressed: () async {
+                                    ApiService.addAppReport('用户点击了获取会员');
+                                    await Navigator.push(
                                       context,
                                       CupertinoPageRoute(
                                         builder: (context) =>
                                             const GetMembershipScreen(),
                                       ),
                                     );
+                                    if (_authProvider.isLoggedIn) {
+                                      log('refreshing status after get membership');
+                                      setState(() {});
+                                    }
                                   },
                                   child: Row(
                                     mainAxisAlignment:
@@ -469,6 +482,58 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   indent: 16,
                                   endIndent: 16,
                                 ),
+
+                                // 只有登录后才显示查看订单按钮
+                                if (auth.isLoggedIn) ...[
+                                  CupertinoButton(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        CupertinoPageRoute(
+                                          builder: (context) =>
+                                              const OrdersScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              CupertinoIcons.doc_text,
+                                              color: CupertinoColors.black,
+                                              size: 20,
+                                            ),
+                                            SizedBox(width: 12),
+                                            Text(
+                                              "订单管理",
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                color: CupertinoColors.black,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Icon(
+                                          CupertinoIcons.chevron_right,
+                                          color: CupertinoColors.black,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Divider(
+                                    height: deviderHeight,
+                                    thickness: deviderThickness,
+                                    color: CupertinoColors.separator,
+                                    indent: 16,
+                                    endIndent: 16,
+                                  ),
+                                ],
 
                                 CupertinoButton(
                                   padding: const EdgeInsets.symmetric(
@@ -731,7 +796,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ),
                                 ],
 
-                                // 在联系我们按钮后面添加版本���钮
+                                // 在联系我们按钮后面添加版本按钮
                                 CupertinoButton(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 12),

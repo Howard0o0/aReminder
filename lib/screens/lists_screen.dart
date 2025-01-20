@@ -20,13 +20,19 @@ class ListsScreen extends StatelessWidget {
                   context,
                   '待办',
                   provider.incompleteReminders.length,
-                  false,
+                  'incomplete',
+                ),
+                _buildListTile(
+                  context,
+                  '计划',
+                  provider.scheduledReminders.length,
+                  'scheduled',
                 ),
                 _buildListTile(
                   context,
                   '已完成',
                   provider.completedReminders.length,
-                  true,
+                  'completed',
                 ),
               ],
             ),
@@ -40,11 +46,11 @@ class ListsScreen extends StatelessWidget {
     BuildContext context,
     String title,
     int count,
-    bool showCompleted,
+    String type,
   ) {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context, showCompleted);
+        Navigator.pop(context, type);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

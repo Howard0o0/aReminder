@@ -10,6 +10,7 @@ class Reminder {
   int priority;
   String? list;
   RepeatType repeatType;
+  int? customRepeatDays;
 
   Reminder({
     this.id,
@@ -21,6 +22,7 @@ class Reminder {
     this.priority = 0,
     this.list,
     this.repeatType = RepeatType.never,
+    this.customRepeatDays,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,7 @@ class Reminder {
       'priority': priority,
       'list': list,
       'repeatType': repeatType.name,
+      'custom_repeat_days': customRepeatDays,
     };
   }
 
@@ -51,6 +54,7 @@ class Reminder {
         (e) => e.name == (map['repeatType'] ?? 'never'),
         orElse: () => RepeatType.never,
       ),
+      customRepeatDays: map['custom_repeat_days'],
     );
   }
 
@@ -64,6 +68,7 @@ class Reminder {
     int? priority,
     String? list,
     RepeatType? repeatType,
+    int? customRepeatDays,
   }) {
     return Reminder(
       id: id ?? this.id,
@@ -75,11 +80,12 @@ class Reminder {
       priority: priority ?? this.priority,
       list: list ?? this.list,
       repeatType: repeatType ?? this.repeatType,
+      customRepeatDays: customRepeatDays ?? this.customRepeatDays,
     );
   }
 
   @override
   String toString() {
-    return 'Reminder{id: $id, title: $title, dueDate: $dueDate, isCompleted: $isCompleted, priority: $priority}';
+    return 'Reminder{id: $id, title: $title, dueDate: $dueDate, isCompleted: $isCompleted, priority: $priority, repeatType: $repeatType, customRepeatDays: $customRepeatDays}';
   }
 } 

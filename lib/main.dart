@@ -12,6 +12,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'dart:io';
 import 'providers/auth_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'providers/product_provider.dart';
 
 // 后台任务回调函数
 @pragma('vm:entry-point')
@@ -56,7 +57,7 @@ void callbackDispatcher() {
   });
 }
 
-// 添加前台任务处理函��
+// 添加前台任务处理函
 @pragma('vm:entry-point')
 void startForegroundTask() {
   FlutterForegroundTask.setTaskHandler(ForegroundTaskHandler());
@@ -209,7 +210,10 @@ class MyApp extends StatelessWidget {
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(
-            create: (_) => AuthProvider(),
+            create: (context) => AuthProvider(),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => ProductProvider(),
           ),
         ],
         child: FutureBuilder<RemindersProvider>(

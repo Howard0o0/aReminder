@@ -31,6 +31,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
   bool _isDatePickerVisible = false;
   bool _isTimePickerVisible = false;
   late RepeatType _repeatType;
+  int? _customRepeatDays;
 
   @override
   void initState() {
@@ -48,6 +49,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
       }
     }
     _repeatType = widget.reminder.repeatType;
+    _customRepeatDays = widget.reminder.customRepeatDays;
   }
 
   @override
@@ -119,8 +121,10 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
       priority: widget.reminder.priority,
       list: widget.reminder.list,
       repeatType: _repeatType,
+      customRepeatDays: _customRepeatDays,
     );
 
+    print('pre-update reminder: $updatedReminder');
     widget.onUpdate(updatedReminder);
 
     if (mounted) {
@@ -287,7 +291,8 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  _repeatType.localizedName,
+                                  _repeatType.getLocalizedName(
+                                      customDays: _customRepeatDays),
                                   style: const TextStyle(
                                     color: CupertinoColors.systemBlue
                                   ),
@@ -300,7 +305,13 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                                 context,
                                 CupertinoPageRoute(
                                   builder: (context) => RepeatTypePicker(
-                                    initialValue: _repeatType,
+                                    selectedType: _repeatType,
+                                    onTypeSelected: (type, customDays) {
+                                      setState(() {
+                                        _repeatType = type;
+                                        _customRepeatDays = customDays;
+                                      });
+                                    },
                                   ),
                                 ),
                               );

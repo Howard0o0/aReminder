@@ -38,6 +38,7 @@ class DatabaseService {
         priority INTEGER NOT NULL DEFAULT 0,
         list TEXT,
         repeatType TEXT NOT NULL DEFAULT 'never',
+        custom_repeat_days INTEGER,
         createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )

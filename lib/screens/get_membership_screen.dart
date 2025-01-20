@@ -7,6 +7,13 @@ import '../providers/auth_provider.dart';
 import '../utils/logger.dart';
 import '../widgets/segmented_code_input.dart';
 import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
+import '../providers/product_provider.dart';
+import '../utils/toast_utils.dart';
+import 'dart:convert' show utf8;
+import '../models/product.dart';
+import '../services/api_service.dart';
+import '../models/order.dart';
 
 class GetMembershipScreen extends StatefulWidget {
   const GetMembershipScreen({super.key});
@@ -20,11 +27,35 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
   final _focusNode = FocusNode();
   static const int _codeLength = 7;
   bool _isLoading = false;
+  bool _isLoadingProducts = true;
+  String _selectedProductId = '';
+  List<Product> _products = [];
+
+  Order? curr_order;
+
+  final api_service = ApiService();
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // 使用 addPostFrameCallback 确保在构建完成后执行
+    print('initState called'); // 调试日志
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final productProvider =
+          Provider.of<ProductProvider>(context, listen: false);
+      log('fetching products');
+      await productProvider.fetchProducts();
+      setState(() {
+        _products = productProvider.products;
+        _isLoadingProducts = false;
+      });
+
+      String productIDList = "";
+      for (var product in _products) {
+        productIDList += '${product.productId}, ';
+      }
+      ApiService.addAppReport('获取产品列表成功. 获取到: $productIDList');
+    });
   }
 
   @override
@@ -89,455 +120,191 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
     }
   }
 
-  Widget _buildPurchaseCard(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                CupertinoIcons.shopping_cart,
-                color: CupertinoColors.black,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.purchaseMembership,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  softWrap: true,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          IntrinsicHeight(
-            child: Row(
-              children: [
-                // 购买按钮
-                Expanded(
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    color: CupertinoColors.black,
-                    child: Container(
-                      height: 64,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                l10n.lifetimeVip,
-                                style: const TextStyle(fontSize: 14),
-                                textAlign: TextAlign.center,
-                                softWrap: true,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            l10n.lifetimeVipPrice,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    onPressed: () async {
-                      try {
-                        // TODO
-                        // Buy membership
-                      } catch (e) {
-                        if (!mounted) return;
-                        showCupertinoDialog(
-                          context: context,
-                          builder: (context) => CupertinoAlertDialog(
-                            title: Text(l10n.purchaseError),
-                            content: Text(e.toString()),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('OK'),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 恢复购买按钮
-                Expanded(
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    color: CupertinoColors.systemGrey5,
-                    child: Container(
-                      height: 64,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Center(
-                        child: Text(
-                          l10n.restore,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: CupertinoColors.black,
-                          ),
-                          textAlign: TextAlign.center,
-                          softWrap: true,
-                        ),
-                      ),
-                    ),
-                    onPressed: () async {
-                      try {
-                        // TODO
-                        // Check past purchases
-                      } catch (e) {
-                        if (!mounted) return;
-                        showCupertinoDialog(
-                          context: context,
-                          builder: (context) => CupertinoAlertDialog(
-                            title: Text(l10n.restoreError),
-                            content: Text(e.toString()),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('OK'),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final auth = Provider.of<AuthProvider>(context);
+    final size = MediaQuery.of(context).size;
+    final padding = size.width * 0.06;
 
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: CupertinoColors.systemBackground,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+    // 定义特性列表
+    final List<(IconData, String)> _features = [
+      (CupertinoIcons.sparkles, "待办事项数量无限制"),
+      (CupertinoIcons.sparkles, "现在购买享受早鸟价"),
+      (CupertinoIcons.sparkles, "享受后续更新的所有新功能"),
+      (CupertinoIcons.sparkles, "可重复购买, 增加会员期限"),
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFBFBFB),
+      body: Stack(
+        children: [
+          // 背景图片
+          Positioned.fill(
+            child: Image.asset(
+              'asset/image/beauty_vilet.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          // 半透明遮罩层
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+            ),
+          ),
+          SafeArea(
+            child: SizedBox(
+              // 添加 SizedBox 提供固定高度约束
+              height: size.height,
+              child: Column(
+                children: [
+                  // 上部分 (固定高度)
+                  SizedBox(
+                    height: size.height * 0.5, // 保持固定为屏幕高度的 1/3
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () => Navigator.pop(context),
-                          child: const Icon(
-                            CupertinoIcons.back,
-                            color: CupertinoColors.black,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            l10n.getMembership,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
+                        // 返回按钮
+                        Padding(
+                          padding: EdgeInsets.all(padding),
+                          child: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => Navigator.pop(context),
+                            child: Icon(
+                              CupertinoIcons.back,
+                              color: Colors.white,
+                              size: size.width * 0.06,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
-                        const SizedBox(width: 40),
+                        // VIP标题和特权列表
+                        Expanded(
+                          // 使用 Expanded 让特权列表填充剩余空间
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: padding),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'iReminder ',
+                                      style: TextStyle(
+                                        fontSize: size.width * 0.08,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      'VIP',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: size.width * 0.08,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: size.height * 0.02),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: _features
+                                        .map(
+                                          (feature) => Padding(
+                                            padding: EdgeInsets.only(
+                                                bottom: size.height * 0.02),
+                                            child: _buildFeatureItem(
+                                                feature.$1, feature.$2),
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: CupertinoColors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                  ),
+
+                  // 中间用 Spacer 自动填充空间
+                  const Spacer(),
+
+                  // 下部分（自适应高度）
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: padding),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min, // 使用最小所需空间
+                      children: [
+                        // 会员选项
+                        _buildMembershipOptions(),
+                        // 底部购买按钮
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: size.height * 0.03, // 底部固定padding
+                            top: size.height * 0.02,
                           ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                CupertinoIcons.sparkles,
-                                color: CupertinoColors.black,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.membershipBenefits,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Table(
-                            border: TableBorder.all(
-                              color: CupertinoColors.systemGrey5,
-                              width: 1,
-                            ),
-                            columnWidths: const {
-                              0: IntrinsicColumnWidth(),
-                              1: FlexColumnWidth(1),
-                              2: FlexColumnWidth(1),
-                            },
-                            children: [
-                              TableRow(
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.systemGrey6,
-                                ),
-                                children: [
-                                  _buildTableCell(l10n.nonMember, true),
-                                  _buildTableCell(l10n.member, true),
-                                ],
-                              ),
-                              TableRow(
-                                children: [
-                                  _buildTableCell('最多10个待办事项', false),
-                                  _buildTableCell('无限制', false),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
+                          child: _buildPurchaseButton(l10n),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Loading 遮罩层
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CupertinoActivityIndicator(
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      "请稍等...",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
                       ),
                     ),
-                    if (Platform.isIOS) ...[
-                      const SizedBox(height: 16),
-                      _buildPurchaseCard(context),
-                    ],
-                    const SizedBox(height: 16),
-                    // Container(
-                    //   decoration: BoxDecoration(
-                    //     color: CupertinoColors.white,
-                    //     borderRadius: BorderRadius.circular(10),
-                    //     boxShadow: [
-                    //       BoxShadow(
-                    //         color: CupertinoColors.black.withOpacity(0.05),
-                    //         blurRadius: 10,
-                    //         offset: const Offset(0, 2),
-                    //       ),
-                    //     ],
-                    //   ),
-                    //   padding: const EdgeInsets.all(16),
-                    //   child: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       Row(
-                    //         children: [
-                    //           const Icon(
-                    //             CupertinoIcons.gift,
-                    //             color: CupertinoColors.black,
-                    //           ),
-                    //           const SizedBox(width: 8),
-                    //           Text(
-                    //             l10n.shareToGetMembership,
-                    //             style: const TextStyle(
-                    //               fontSize: 15,
-                    //               fontWeight: FontWeight.w600,
-                    //             ),
-                    //           ),
-                    //         ],
-                    //       ),
-                    //       const SizedBox(height: 12),
-                    //       Text(
-                    //         l10n.shareToGetMembershipDesc,
-                    //         style: const TextStyle(
-                    //           fontSize: 15,
-                    //           color: CupertinoColors.secondaryLabel,
-                    //         ),
-                    //       ),
-                    //       if (auth.invitationCode != null) ...[
-                    //         const SizedBox(height: 12),
-                    //         Container(
-                    //           padding: const EdgeInsets.symmetric(
-                    //             horizontal: 12,
-                    //             vertical: 8,
-                    //           ),
-                    //           decoration: BoxDecoration(
-                    //             color: CupertinoColors.systemGrey6,
-                    //             borderRadius: BorderRadius.circular(8),
-                    //           ),
-                    //           child: Row(
-                    //             mainAxisAlignment:
-                    //                 MainAxisAlignment.spaceBetween,
-                    //             children: [
-                    //               Text(
-                    //                 auth.invitationCode!,
-                    //                 style: const TextStyle(
-                    //                   fontSize: 17,
-                    //                   fontWeight: FontWeight.w500,
-                    //                 ),
-                    //               ),
-                    //               CupertinoButton(
-                    //                 padding: EdgeInsets.zero,
-                    //                 onPressed: () => _copyInvitationCode(
-                    //                     context, auth.invitationCode!),
-                    //                 child: const Icon(
-                    //                   CupertinoIcons.doc_on_doc,
-                    //                   color: CupertinoColors.black,
-                    //                 ),
-                    //               ),
-                    //             ],
-                    //           ),
-                    //         ),
-                    //       ],
-                    //     ],
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 16),
-                    // Container(
-                    //   decoration: BoxDecoration(
-                    //     color: CupertinoColors.white,
-                    //     borderRadius: BorderRadius.circular(10),
-                    //     boxShadow: [
-                    //       BoxShadow(
-                    //         color: CupertinoColors.black.withOpacity(0.05),
-                    //         blurRadius: 10,
-                    //         offset: const Offset(0, 2),
-                    //       ),
-                    //     ],
-                    //   ),
-                    //   padding: const EdgeInsets.all(16),
-                    //   child: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       Row(
-                    //         children: [
-                    //           const Icon(
-                    //             CupertinoIcons.star,
-                    //             color: CupertinoColors.black,
-                    //           ),
-                    //           const SizedBox(width: 8),
-                    //           Text(
-                    //             l10n.enterCodeToGetMembership,
-                    //             style: const TextStyle(
-                    //               fontSize: 15,
-                    //               fontWeight: FontWeight.w600,
-                    //             ),
-                    //           ),
-                    //         ],
-                    //       ),
-                    //       const SizedBox(height: 12),
-                    //       Text(
-                    //         l10n.enterCodeToGetMembershipDesc,
-                    //         style: const TextStyle(
-                    //           fontSize: 15,
-                    //           color: CupertinoColors.secondaryLabel,
-                    //         ),
-                    //       ),
-                    //       const SizedBox(height: 12),
-                    //       SegmentedCodeInput(
-                    //         controller: _codeController,
-                    //         focusNode: _focusNode,
-                    //         length: _codeLength,
-                    //         onChanged: (value) {
-                    //           setState(() {
-                    //             _handleCodeInput(context, value);
-                    //           });
-                    //         },
-                    //         keyboardType: TextInputType.numberWithOptions(
-                    //           decimal: false,
-                    //         ),
-                    //         textCapitalization: TextCapitalization.none,
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
                   ],
                 ),
               ),
             ),
-          ),
-        ),
-        if (_isLoading)
-          Container(
-            color: CupertinoColors.black.withOpacity(0.1),
-            child: const Center(
-              child: CupertinoActivityIndicator(
-                radius: 15,
-              ),
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
-  void _copyInvitationCode(BuildContext context, String code) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      await Clipboard.setData(ClipboardData(text: code));
-      if (!mounted) return;
-      showCupertinoDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => CupertinoAlertDialog(
-          content: Text(l10n.codeCopied),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-              textStyle: const TextStyle(color: CupertinoColors.black),
+  Widget _buildFeatureItem(IconData icon, String text) {
+    final size = MediaQuery.of(context).size;
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: size.width * 0.07, color: Colors.white),
+        SizedBox(width: size.width * 0.04),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: size.width * 0.045,
+              color: Colors.white,
+              height: 1.2,
             ),
-          ],
+            softWrap: true,
+            overflow: TextOverflow.visible,
+          ),
         ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      showCupertinoDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => CupertinoAlertDialog(
-          content: Text(l10n.copyFailed),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-              textStyle: const TextStyle(color: CupertinoColors.black),
-            ),
-          ],
-        ),
-      );
-    }
+      ],
+    );
   }
 
   Widget _buildTableCell(String text, bool isHeader, {bool noWrap = false}) {
@@ -556,6 +323,445 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
           fontWeight: isHeader ? FontWeight.w600 : FontWeight.normal,
           color:
               isHeader ? CupertinoColors.black : CupertinoColors.secondaryLabel,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMembershipOptions() {
+    final size = MediaQuery.of(context).size;
+
+    if (_isLoadingProducts) {
+      return Container(
+        height: size.height * 0.25, // 屏幕高度的25%
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.grey[100]!,
+              Colors.grey[200]!,
+              Colors.grey[100]!,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(size.width * 0.03),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: size.width * 0.025,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(size.width * 0.04),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: size.width * 0.025,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: CupertinoActivityIndicator(
+                  radius: size.width * 0.035,
+                  color: const Color(0xFFFF416C),
+                ),
+              ),
+              SizedBox(height: size.height * 0.02),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: size.width * 0.06,
+                  vertical: size.height * 0.01,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(size.width * 0.05),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: size.width * 0.02,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Loading...',
+                  style: TextStyle(
+                    color: const Color(0xFFFF416C),
+                    fontSize: size.width * 0.035,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: _products.map((product) {
+        final isSelected = _selectedProductId == product.productId;
+        String priceDisplay = '';
+        String? savedAmount;
+        String? originalPrice;
+
+        originalPrice = _calculateOriginalPrice(product);
+        final savedPrice = _calculateSavedAmount(product);
+        final formattedPrice = product.amount.toStringAsFixed(2);
+        priceDisplay =
+            "${formattedPrice} / ${_getPlanPeriod(product.productType)}";
+        savedAmount = '节省$savedPrice';
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: size.height * 0.01),
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              setState(() {
+                _selectedProductId = product.productId;
+              });
+            },
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: size.width * 0.06,
+                vertical: size.height * 0.015,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : Colors.grey[200],
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: Colors.grey[200]!,
+                        width: size.width * 0.005,
+                      ),
+                borderRadius: BorderRadius.circular(size.width * 0.03),
+              ),
+              child: Stack(
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Text(
+                          priceDisplay,
+                          style: TextStyle(
+                            fontSize: size.width * 0.038,
+                            fontWeight: FontWeight.bold,
+                            color: CupertinoColors.black,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.005),
+                      if (savedAmount != null) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '原价 ' + (originalPrice ?? ''),
+                              style: TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                                color: Colors.grey[600],
+                                fontSize: size.width * 0.03,
+                              ),
+                            ),
+                            SizedBox(width: size.width * 0.01),
+                            Text(
+                              savedAmount,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: size.width * 0.03,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (isSelected)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: Icon(
+                          CupertinoIcons.checkmark_circle_fill,
+                          color: CupertinoColors.black,
+                          size: size.width * 0.05,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _getPlanPeriod(int productId) {
+    if (productId == 1) return '周';
+    if (productId == 2) return '年';
+    if (productId == 3) return '永久';
+    return '';
+  }
+
+  double rawPriceFactor = 1.5;
+
+  String _calculateOriginalPrice(Product product) {
+    final price = (product.amount * rawPriceFactor).toDouble();
+    return "¥${price.toStringAsFixed(2)}";
+  }
+
+  String _calculateSavedAmount(Product product) {
+    final originalPrice = product.amount * rawPriceFactor;
+    final savedAmount = (originalPrice - product.amount).toDouble();
+    return "¥${savedAmount.toStringAsFixed(2)}";
+  }
+
+  Future<void> finishPayment() async {
+    if (curr_order == null) {
+      ApiService.addAppReport('订单不存在');
+      if (mounted) {
+        ToastUtils.showDialog(
+          context,
+          '查询订单失败',
+          '订单信息不存在',
+        );
+      }
+      return;
+    }
+
+    try {
+      final resp = await ApiService.getOrderStatus(curr_order!.orderNo);
+
+      if (!resp.success) {
+        ApiService.addAppReport(
+            '查询订单失败: ${resp.success}, errcode: ${resp.errorCode}, message: ${resp.message}');
+        if (mounted) {
+          ToastUtils.showDialog(
+            context,
+            '查询订单失败',
+            resp.message ?? '未知错误',
+          );
+        }
+        return;
+      }
+
+      final orderStatus = resp.data!;
+      log('orderStatus: $orderStatus');
+      if (orderStatus['pay_status'].toString() == "1") {
+        ApiService.addAppReport('订单支付成功');
+
+        // 支付成功
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final success = await authProvider.updateVipStatus();
+        ApiService.addAppReport('更新会员状态: $success');
+
+        if (success) {
+          if (mounted) {
+            ToastUtils.show('购买成功');
+          }
+        } else {
+          if (mounted) {
+            ToastUtils.showDialog(
+              context,
+              '更新会员状态失败',
+              '请稍后在设置中刷新会员状态',
+            );
+          }
+        }
+      } else {
+        // 未支付
+        ApiService.addAppReport('订单未支付');
+        if (mounted) {
+          ToastUtils.showDialog(
+            context,
+            '支付未完成',
+            '订单未支付成功，请到订单管理页面完成支付',
+          );
+        }
+      }
+    } catch (e) {
+      ApiService.addAppReport('查询订单失败: $e');
+      if (mounted) {
+        ToastUtils.showDialog(
+          context,
+          '查询订单失败',
+          e.toString(),
+        );
+      }
+    }
+  }
+
+  // 为了保持代码整洁，建议将购买按钮抽取为单独的方法
+  Widget _buildPurchaseButton(AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFFF416C),
+              Color(0xFFFF4B2B),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: CupertinoButton(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          onPressed: _isLoading
+              ? null
+              : () async {
+                  ApiService.addAppReport('点击了购买按钮');
+
+                  final authProvider =
+                      Provider.of<AuthProvider>(context, listen: false);
+                  final user = authProvider.user;
+                  if (user == null) {
+                    ToastUtils.show('请登录');
+                    ApiService.addAppReport('购买时未登录');
+                    return;
+                  }
+
+                  if (_selectedProductId == '') {
+                    ToastUtils.show('请选择1个购买方案');
+                    ApiService.addAppReport('购买时没有选择购买方案');
+                    return;
+                  }
+                  setState(() {
+                    _isLoading = true;
+                  });
+
+                  ApiService.addAppReport('正在购买: $_selectedProductId');
+                  try {
+                    final resp = await ApiService.createOrder(
+                      userId: user.userId,
+                      productId: _selectedProductId,
+                      payChannel: 'alipay',
+                    );
+                    log('resp. success: ${resp.success}, errcode: ${resp.errorCode}, message: ${resp.message}');
+                    ApiService.addAppReport(
+                        '创建订单: ${resp.success}, errcode: ${resp.errorCode}, message: ${resp.message}');
+
+                    if (!resp.success) {
+                      if (!mounted) return;
+                      ToastUtils.showDialog(
+                          context, '创建订单失败', resp.message ?? '');
+                      return;
+                    }
+
+                    curr_order = resp.data;
+                    log('curr_order: ${curr_order!}');
+
+                    if (curr_order!.payUrl == null && mounted) {
+                      ToastUtils.showDialog(
+                        context,
+                        '生成订单失败',
+                        '服务器出错, 支付链接为空, 请联系我们',
+                      );
+                      ApiService.addAppReport(
+                          '获取到的订单 url 为空. order_no: ${curr_order?.orderNo} ');
+                      return;
+                    }
+
+                    if (!await canLaunchUrl(Uri.parse(curr_order!.payUrl!)) &&
+                        mounted) {
+                      ToastUtils.showDialog(
+                        context,
+                        '生成订单失败',
+                        '服务器出错, 生成的支付链接不可访问: ${curr_order!.payUrl}',
+                      );
+                      ApiService.addAppReport(
+                          '生成的支付链接不可访问: ${curr_order!.payUrl}');
+                      return;
+                    }
+
+                    await launchUrl(Uri.parse(curr_order!.payUrl!));
+                    ApiService.addAppReport('已跳转到支付链接: ${curr_order!.payUrl}');
+
+                    if (mounted) {
+                      showCupertinoDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => CupertinoAlertDialog(
+                          title: const Text('支付确认'),
+                          content: const Text('请支付后确认状态'),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: const Text(
+                                '已完成支付',
+                                style: TextStyle(color: Color(0xFFFF416C)),
+                              ),
+                              onPressed: () async {
+                                ApiService.addAppReport('点击了已完成支付');
+                                Navigator.of(context).pop(); // 只关闭对话框
+                                setState(() {
+                                  _isLoading = true;
+                                });
+                                try {
+                                  await finishPayment();
+                                } finally {
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+                                }
+                              },
+                            ),
+                            CupertinoDialogAction(
+                              child: const Text(
+                                '放弃支付',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                              onPressed: () {
+                                ApiService.addAppReport('点击了放弃支付');
+                                Navigator.of(context).pop(); // 只关闭对话框
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (!mounted) return;
+                    ToastUtils.showDialog(
+                      context,
+                      l10n.purchaseError,
+                      e.toString(),
+                    );
+                  } finally {
+                    if (mounted) {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    }
+                  }
+                },
+          child: _isLoading
+              ? const CupertinoActivityIndicator(
+                  color: CupertinoColors.white,
+                )
+              : Text(
+                  l10n.getMembership,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
         ),
       ),
     );

@@ -398,7 +398,13 @@ class NotificationService {
       return;
     }
 
-    final nextOccurrence = reminder.repeatType.getNextOccurrence(reminder.dueDate!);
+    print(
+        'rescheduleRepeatingReminder. repeatType: ${reminder.repeatType}, customRepeatDays: ${reminder.customRepeatDays}');
+    final nextOccurrence = reminder.repeatType.getNextOccurrence(
+      reminder.dueDate!,
+      customDays: reminder.customRepeatDays,
+    );
+    print('nextOccurrence: $nextOccurrence');
     if (nextOccurrence != null) {
       final nextReminder = Reminder(
         id: reminder.id,

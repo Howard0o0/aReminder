@@ -15,6 +15,10 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/repeat_type.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:install_plugin/install_plugin.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,7 +37,19 @@ class _HomeScreenState extends State<HomeScreen> {
   // 添加一个 Map 来跟踪每个提醒事项的动画状态
   final Map<int, bool> _animatingItems = {};
 
-  final GlobalKey _infoButtonKey = GlobalKey(); // 添加这一行来获取按钮位置
+  final GlobalKey<State<StatefulWidget>> _infoButtonKey =
+      GlobalKey(debugLabel: 'info_button_key');
+
+  double _downloadProgress = 0.0;
+  String _downloadSpeed = '';
+  DateTime? _lastProgressUpdate;
+  int? _lastReceivedBytes;
+  final _speedUpdateInterval =
+      const Duration(milliseconds: 500); // 设置更新间隔为500ms
+  List<double> _speedBuffer = []; // 用于计算平均速度的缓冲区
+  static const int _speedBufferSize = 3; // 平均速度计算使用的样本数
+
+  String _currentListType = 'incomplete'; // 添加这一行
 
   @override
   void initState() {
@@ -147,13 +163,166 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             CupertinoDialogAction(
               onPressed: () async {
-                // TODO
-                final url = Uri.parse(ApiService.officialWebsite);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(
-                    url,
-                    mode: LaunchMode.externalApplication,
+                Navigator.pop(context); // 先关闭当前对话框
+
+                try {
+                  // 显示下载进度对话框
+                  BuildContext? dialogContext;
+                  StateSetter? dialogSetState; // 添加一个变量保存 StateSetter
+                  
+                  showCupertinoDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      dialogContext = context;
+                      return StatefulBuilder(
+                        builder:
+                            (BuildContext context, StateSetter setDialogState) {
+                          dialogSetState = setDialogState; // 保存 StateSetter 引用
+                          return CupertinoAlertDialog(
+                            title: const Text('正在下载更新'),
+                            content: Column(
+                              children: [
+                                const SizedBox(height: 10),
+                                LinearProgressIndicator(
+                                  value: _downloadProgress,
+                                  backgroundColor: Colors.grey[200],
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                          CupertinoColors.activeBlue),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                        '${(_downloadProgress * 100).toStringAsFixed(1)}%'),
+                                    if (_downloadSpeed.isNotEmpty) ...[
+                                      const SizedBox(width: 8), // 添加一些间距
+                                      Text(
+                                        _downloadSpeed,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: CupertinoColors.systemGrey,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                   );
+
+                  final dio = Dio();
+                  final tempDir = await getTemporaryDirectory();
+                  final filePath = '${tempDir.path}/update.apk';
+
+                  await dio.download(
+                    'https://sharpofscience.top/app/aReminder.apk',
+                    filePath,
+                    options: Options(
+                      headers: {
+                        'User-Agent':
+                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                      },
+                    ),
+                    onReceiveProgress: (received, total) {
+                      if (total != -1) {
+                        final now = DateTime.now();
+
+                        // 更新进度
+                        setState(() {
+                          _downloadProgress = received / total;
+                        });
+
+                        // 计算下载速度
+                        if (_lastProgressUpdate != null &&
+                            _lastReceivedBytes != null &&
+                            now.difference(_lastProgressUpdate!) >=
+                                _speedUpdateInterval) {
+                          final duration = now
+                              .difference(_lastProgressUpdate!)
+                              .inMilliseconds;
+                          final bytesPerSecond =
+                              (received - _lastReceivedBytes!) *
+                                  1000 /
+                                  duration;
+
+                          // 添加新的速度到缓冲区
+                          _speedBuffer.add(bytesPerSecond);
+                          if (_speedBuffer.length > _speedBufferSize) {
+                            _speedBuffer.removeAt(0);
+                          }
+
+                          // 计算平均速度
+                          final averageSpeed =
+                              _speedBuffer.reduce((a, b) => a + b) /
+                                  _speedBuffer.length;
+                          _downloadSpeed = _formatSpeed(averageSpeed);
+
+                          // 更新时间和字节数记录
+                          _lastProgressUpdate = now;
+                          _lastReceivedBytes = received;
+
+                          // 更新对话框UI
+                          dialogSetState?.call(() {});
+                        } else if (_lastProgressUpdate == null) {
+                          // 首次更新
+                          _lastProgressUpdate = now;
+                          _lastReceivedBytes = received;
+                        }
+                      }
+                    },
+                  );
+
+                  // 下载完成后关闭进度对话框
+                  if (dialogContext != null) {
+                    Navigator.pop(dialogContext!);
+                  }
+
+                  // 安装APK
+                  if (Platform.isAndroid) {
+                    try {
+                      await InstallPlugin.installApk(filePath);
+                    } catch (e) {
+                      if (mounted) {
+                        showCupertinoDialog(
+                          context: context,
+                          builder: (context) => CupertinoAlertDialog(
+                            title: const Text('安装失败'),
+                            content: Text('安装过程中出现错误：$e'),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('确定'),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // 处理下载错误
+                  if (mounted) {
+                    showCupertinoDialog(
+                      context: context,
+                      builder: (context) => CupertinoAlertDialog(
+                        title: const Text('更新失败'),
+                        content: Text('下载过程中出现错误：$e'),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('确定'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text(
@@ -256,6 +425,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<RemindersProvider>(
       builder: (context, provider, child) {
+        // 根据当前列表类型获取对应的提醒事项
+        List<Reminder> currentReminders;
+        switch (_currentListType) {
+          case 'completed':
+            currentReminders = provider.completedReminders;
+          case 'scheduled':
+            currentReminders =
+                _groupScheduledReminders(provider.scheduledReminders);
+          case 'incomplete':
+          default:
+            currentReminders = provider.incompleteReminders;
+        }
+        
         return Stack(
           children: [
             CupertinoPageScaffold(
@@ -271,7 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                     if (result != null) {
                       setState(() {
-                        _showCompletedItems = result;
+                        _currentListType = result;
                       });
                     }
                   },
@@ -304,7 +486,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     else ...[
                       CupertinoButton(
-                        key: _infoButtonKey, // 添加 key
+                        key: _infoButtonKey,
                         padding: EdgeInsets.zero,
                         child: const Icon(CupertinoIcons.info_circle),
                         onPressed: _showInstruction,
@@ -359,18 +541,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               SliverList(
                                 delegate: SliverChildBuilderDelegate(
                                   (context, index) {
-                                    final items = _showCompletedItems
-                                        ? provider.completedReminders
-                                        : provider.incompleteReminders;
                                     return _buildReminderItem(
                                       context,
-                                      items[index],
+                                      currentReminders[index],
                                       provider,
                                     );
                                   },
-                                  childCount: _showCompletedItems
-                                      ? provider.completedReminders.length
-                                      : provider.incompleteReminders.length,
+                                  childCount: currentReminders.length,
                                 ),
                               ),
                               SliverToBoxAdapter(
@@ -524,6 +701,21 @@ class _HomeScreenState extends State<HomeScreen> {
     Reminder reminder,
     RemindersProvider provider,
   ) {
+    // 如果是分隔符（priority == -1），使用不同的样式
+    if (reminder.priority == -1) {
+      return Container(
+        key: ValueKey('header_${reminder.id}'),
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+        child: Text(
+          reminder.title,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+
     // 构建副标题组件
     Widget? subtitle;
     if (reminder.dueDate != null) {
@@ -534,6 +726,8 @@ class _HomeScreenState extends State<HomeScreen> {
           : CupertinoColors.systemGrey;
 
       subtitle = Row(
+        key: ValueKey('subtitle_${reminder.id}'),
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             _formatDate(reminder.dueDate),
@@ -543,28 +737,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           if (hasRepeat) ...[
-            const SizedBox(width: 4), // 添加小间距
+            const SizedBox(width: 4),
             Icon(
               CupertinoIcons.repeat,
               size: 14,
               color: CupertinoColors.systemBlue,
             ),
-            const SizedBox(width: 2), // 添加小间距
-            Text(
-              reminder.repeatType!.localizedName,
-              style: TextStyle(
-                fontSize: 15,
-                color: textColor,
+            const SizedBox(width: 2),
+            Expanded(
+              child: Text(
+                reminder.repeatType
+                    .getLocalizedName(customDays: reminder.customRepeatDays),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: textColor,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ],
       );
     }
-
+    
+    // 原有的提醒项渲染逻辑
     return Dismissible(
-      key: Key(reminder.id.toString()),
-      direction: DismissDirection.endToStart, // 只允许从右向左滑动
+      key: ValueKey('dismissible_${reminder.id}'),
+      direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
@@ -575,7 +774,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       confirmDismiss: (direction) async {
-        // 显示确认对话框
         return await showCupertinoDialog<bool>(
               context: context,
               builder: (context) => CupertinoAlertDialog(
@@ -598,7 +796,6 @@ class _HomeScreenState extends State<HomeScreen> {
             false;
       },
       onDismissed: (direction) {
-        // 删除提醒
         provider.deleteReminder(reminder.id!);
       },
       child: Container(
@@ -614,7 +811,6 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: GestureDetector(
             onTap: () {
-              // 如果已经在动画中，直接返回
               if (_animatingItems[reminder.id] == true) return;
 
               setState(() {
@@ -699,11 +895,71 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isOverdue(DateTime dueDate) {
     return dueDate.isBefore(DateTime.now());
   }
+
+  String _formatSpeed(double speedInBytes) {
+    if (speedInBytes < 1024) {
+      return '${speedInBytes.toStringAsFixed(1)} B/s';
+    } else if (speedInBytes < 1024 * 1024) {
+      return '${(speedInBytes / 1024).toStringAsFixed(1)} KB/s';
+    } else {
+      return '${(speedInBytes / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    }
+  }
+
+  // 添加分组逻辑的辅助方法
+  List<Reminder> _groupScheduledReminders(List<Reminder> reminders) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // 按日期排序
+    reminders.sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+
+    // 添加日期分隔符
+    List<Reminder> groupedReminders = [];
+    DateTime? lastDate;
+
+    for (var reminder in reminders) {
+      final reminderDate = DateTime(
+        reminder.dueDate!.year,
+        reminder.dueDate!.month,
+        reminder.dueDate!.day,
+      );
+
+      if (lastDate == null || reminderDate != lastDate) {
+        // 修改这里：为分隔符添加不同的前缀
+        final headerReminder = Reminder(
+          id: -reminderDate.millisecondsSinceEpoch, // 仍然使用负的时间戳
+          title: _getDateHeader(reminderDate, today),
+          isCompleted: false,
+          priority: -1, // 用于标识这是一个分隔符
+        );
+        groupedReminders.add(headerReminder);
+        lastDate = reminderDate;
+      }
+      groupedReminders.add(reminder);
+    }
+
+    return groupedReminders;
+  }
+
+  String _getDateHeader(DateTime date, DateTime today) {
+    final tomorrow = today.add(const Duration(days: 1));
+
+    if (date == today) {
+      return '今天';
+    } else if (date == tomorrow) {
+      return '明天';
+    } else if (date.year == today.year) {
+      return '${date.month}月${date.day}日';
+    } else {
+      return '${date.year}年${date.month}月${date.day}日';
+    }
+  }
 }
 
 // 添加自定义画布类来绘制遮罩和高亮效果
 class HighlightPainter extends CustomPainter {
-  final GlobalKey targetKey;
+  final GlobalKey<State<StatefulWidget>> targetKey;
 
   HighlightPainter(this.targetKey);
 

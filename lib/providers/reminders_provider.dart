@@ -44,6 +44,10 @@ class RemindersProvider with ChangeNotifier {
   List<Reminder> get completedReminders =>
       _reminders.where((r) => r.isCompleted).toList();
 
+  List<Reminder> get scheduledReminders =>
+      _reminders.where((r) => r.dueDate != null && !r.isCompleted).toList()
+        ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+
   Future<void> loadReminders() async {
     _reminders = await _db.getReminders();
     notifyListeners();
@@ -67,6 +71,8 @@ class RemindersProvider with ChangeNotifier {
       isCompleted: reminder.isCompleted,
       priority: reminder.priority,
       list: reminder.list,
+      repeatType: reminder.repeatType,
+      customRepeatDays: reminder.customRepeatDays,
     );
 
     _reminders.add(newReminder);
@@ -74,13 +80,15 @@ class RemindersProvider with ChangeNotifier {
       await _notifications.scheduleReminder(newReminder);
     }
     notifyListeners();
-    print('Reminder added: ${newReminder.id}');
+    print('Reminder added: $newReminder');
     ApiService.addAppReport(
         '成功添加一个提醒事项. [reminder: $newReminder] [id: $newReminder.id] [title: $newReminder.title] [notes: $newReminder.notes] [dueDate: $newReminder.dueDate]');
     updateBadgeCount();
   }
 
   Future<void> updateReminder(Reminder reminder) async {
+    print('updateing reminder: $reminder');
+
     await _db.updateReminder(reminder);
     final index = _reminders.indexWhere((r) => r.id == reminder.id);
     if (index != -1) {
@@ -92,7 +100,7 @@ class RemindersProvider with ChangeNotifier {
       }
       notifyListeners();
     }
-    print('Reminder updated: ${reminder.id}');
+    print('Reminder updated: ${reminder}');
     ApiService.addAppReport(
         '成功更新一个提醒事项. [reminder: $reminder] [id: $reminder.id] [title: $reminder.title] [notes: $reminder.notes] [dueDate: $reminder.dueDate]');
 
@@ -117,18 +125,15 @@ class RemindersProvider with ChangeNotifier {
     }
   }
 
-  Future<void>
-
-      /// The `toggleComplete` method in the `RemindersProvider` class is responsible for
-      /// toggling the completion status of a reminder. It takes a `Reminder` object as a
-      /// parameter, updates its completion status to the opposite of its current status, and
-      /// then calls the `updateReminder` method to save the updated reminder to the database.
-      toggleComplete(Reminder reminder) async {
+  Future<void> toggleComplete(Reminder reminder) async {
     if (reminder.repeatType != RepeatType.never && reminder.dueDate != null) {
-      print('处理重复提醒事项: ${reminder.id}');
-      // 计算下一次提醒时间
-      final nextDueDate =
-          reminder.repeatType.getNextOccurrence(reminder.dueDate!);
+      print(
+          '处理重复提醒事项: ${reminder.id}, 重复类型: ${reminder.repeatType}, 自定义天数: ${reminder.customRepeatDays}');
+      // 计算下一次提醒时间，传入自定义天数
+      final nextDueDate = reminder.repeatType.getNextOccurrence(
+        reminder.dueDate!,
+        customDays: reminder.customRepeatDays,
+      );
       reminder.isCompleted = false;
       reminder.dueDate = nextDueDate;
       print('nextDueDate: $nextDueDate');
@@ -170,16 +175,8 @@ class RemindersProvider with ChangeNotifier {
       // 创建新的到期时间
       final newDueDate = DateTime.now().add(duration);
 
-      final updatedReminder = Reminder(
-        id: reminder.id,
-        title: reminder.title,
-        notes: reminder.notes,
-        dueDate: newDueDate,
-        isCompleted: reminder.isCompleted,
-        priority: reminder.priority,
-        list: reminder.list,
-      );
-
+      var updatedReminder = reminder;
+      updatedReminder.dueDate = newDueDate;
       await updateReminder(updatedReminder);
 
       print('提醒已推迟 ${duration.inMinutes} 分钟: ID=$id');
