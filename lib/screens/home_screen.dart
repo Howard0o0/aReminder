@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../providers/auth_provider.dart';
@@ -32,13 +34,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isAddingNewReminder = false;
   bool _showCompletedItems = false;
-  bool _shouldHighlightInfo = false;
+  final ValueNotifier<bool> _shouldHighlightInfo = ValueNotifier<bool>(false);
 
   // 添加一个 Map 来跟踪每个提醒事项的动画状态
   final Map<int, bool> _animatingItems = {};
-
-  final GlobalKey<State<StatefulWidget>> _infoButtonKey =
-      GlobalKey(debugLabel: 'info_button_key');
 
   double _downloadProgress = 0.0;
   String _downloadSpeed = '';
@@ -56,14 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     Future.microtask(() async {
       await NotificationService().requestRequiredPermissions();
-      // 检查是否是首次启动
       final prefs = await SharedPreferences.getInstance();
       final hasShownInstruction =
           prefs.getBool('has_shown_instruction') ?? false;
       if (!hasShownInstruction) {
-        setState(() {
-          _shouldHighlightInfo = true;
-        });
+        _shouldHighlightInfo.value = true; // 使用 ValueNotifier
       }
     });
     // 加载已有的提醒事项
@@ -82,8 +78,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    // 在 dispose 时移除高亮遮罩
+    _shouldHighlightInfo.value = false;
+
+    print('dispose');
+
     _newReminderController.dispose();
     _focusNode.dispose();
+    _shouldHighlightInfo.dispose(); // 记得释放 ValueNotifier
     super.dispose();
   }
 
@@ -415,14 +417,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showInstruction() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_shown_instruction', true);
-    setState(() {
-      _shouldHighlightInfo = false;
-    });
+    _shouldHighlightInfo.value = false; // 使用 ValueNotifier
     NotificationService().showInstructionDialog(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    print('build');
+
     return Consumer<RemindersProvider>(
       builder: (context, provider, child) {
         // 根据当前列表类型获取对应的提醒事项
@@ -486,7 +488,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     else ...[
                       CupertinoButton(
-                        key: _infoButtonKey,
                         padding: EdgeInsets.zero,
                         child: const Icon(CupertinoIcons.info_circle),
                         onPressed: _showInstruction,
@@ -644,32 +645,72 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            if (_shouldHighlightInfo)
-              GestureDetector(
-                onTap: _showInstruction,
-                child: CustomPaint(
-                  painter: HighlightPainter(_infoButtonKey),
+            ValueListenableBuilder<bool>(
+              valueListenable: _shouldHighlightInfo,
+              builder: (context, shouldHighlight, child) {
+                if (!shouldHighlight) return const SizedBox.shrink();
+                
+                // 使用 MediaQuery 获取状态栏高度和屏幕尺寸
+                final mediaQuery = MediaQuery.of(context);
+                final statusBarHeight = mediaQuery.padding.top;
+                final navBarHeight = 44.0; // CupertinoNavigationBar 的标准高度
+
+                // 计算 info button 的位置
+                final buttonSize = 44.0; // CupertinoButton 的标准尺寸
+                final screenWidth = mediaQuery.size.width;
+                final buttonPosition =
+                    screenWidth - buttonSize - 44.0; // 44.0 是右边距
+                
+                return GestureDetector(
+                  onTap: _showInstruction,
                   child: Container(
                     width: double.infinity,
                     height: double.infinity,
-                    alignment: Alignment.center,
-                    child: const Column(
-                      mainAxisSize: MainAxisSize.min,
+                    color: Colors.black.withOpacity(0.7),
+                    child: Stack(
                       children: [
-                        SizedBox(height: 100),
-                        Text(
-                          '首次使用请阅读说明',
-                          style: TextStyle(
-                            color: CupertinoColors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        // 高亮圆圈
+                        Positioned(
+                          // 计算垂直中心点：状态栏高度 + 导航栏中心点位置
+                          top:
+                              statusBarHeight + (navBarHeight - buttonSize) / 2,
+                          // 计算水平中心点：按钮位置 + 按钮尺寸的一半 - 圆圈尺寸的一半
+                          left: buttonPosition +
+                              (buttonSize / 2) -
+                              ((buttonSize + 22) / 2),
+                          child: Container(
+                            width: buttonSize + 22, // 圆圈直径
+                            height: buttonSize + 22, // 圆圈直径
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: CupertinoColors.activeBlue,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // 提示文本
+                        Positioned(
+                          top: statusBarHeight + navBarHeight + 20,
+                          left: 0,
+                          right: 0,
+                          child: const Text(
+                            '首次使用请阅读说明',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: CupertinoColors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+              },
+            ),
           ],
         );
       },
@@ -955,53 +996,4 @@ class _HomeScreenState extends State<HomeScreen> {
       return '${date.year}年${date.month}月${date.day}日';
     }
   }
-}
-
-// 添加自定义画布类来绘制遮罩和高亮效果
-class HighlightPainter extends CustomPainter {
-  final GlobalKey<State<StatefulWidget>> targetKey;
-
-  HighlightPainter(this.targetKey);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withOpacity(0.7)
-      ..style = PaintingStyle.fill;
-
-    // 获取目标按钮的位置和大小
-    final RenderBox? renderBox =
-        targetKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final position = renderBox.localToGlobal(Offset.zero);
-    final buttonSize = renderBox.size;
-    final center = Offset(
-      position.dx + buttonSize.width / 2,
-      position.dy + buttonSize.height / 2,
-    );
-    final radius = buttonSize.width * 0.8;
-
-    // 创建一个路径来绘制遮罩
-    final path = Path()
-      ..addRect(Offset.zero & size) // 添加整个屏幕大小的矩形
-      ..addOval(Rect.fromCircle(center: center, radius: radius)) // 添加圆形
-      ..fillType = PathFillType.evenOdd; // 使用 evenOdd 规则，这样圆形区域会被"挖空"
-
-    // 绘制遮罩
-    canvas.drawPath(path, paint);
-
-    // 绘制高亮边框
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = CupertinoColors.activeBlue
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
