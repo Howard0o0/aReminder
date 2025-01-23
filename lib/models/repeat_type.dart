@@ -6,6 +6,7 @@ enum RepeatType {
   weekends,
   weekly,
   monthly,
+  yearly,
   custom;
 
   String getLocalizedName({int? customDays}) {
@@ -24,6 +25,8 @@ enum RepeatType {
         return '每周';
       case RepeatType.monthly:
         return '每月';
+      case RepeatType.yearly:
+        return '每年';
       case RepeatType.custom:
         if (customDays != null) {
           return '每$customDays天';
@@ -77,6 +80,10 @@ enum RepeatType {
           return DateTime(
               next.year, next.month + 1, next.day, next.hour, next.minute);
         }
+
+      case RepeatType.yearly:
+        return DateTime(
+            next.year + 1, next.month, next.day, next.hour, next.minute);
 
       case RepeatType.custom:
         if (customDays != null && customDays > 0) {
