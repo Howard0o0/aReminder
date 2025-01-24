@@ -47,17 +47,34 @@ class DatabaseService {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE reminders ADD COLUMN repeatType TEXT NOT NULL DEFAULT "never"'
-      );
-      print('Added repeatType column');
+      try {
+        await db.execute(
+            'ALTER TABLE reminders ADD COLUMN repeatType TEXT NOT NULL DEFAULT "never"');
+        print('成功添加 repeatType 列');
+      } catch (e) {
+        print('添加 repeatType 列时出错: $e');
+        // 如果列已存在，忽略错误
+      }
     }
 
     if (oldVersion < 3) {
-      await db.execute(
-          'ALTER TABLE reminders ADD COLUMN custom_repeat_days INTEGER');
-      print('Added custom_repeat_days column');
+      try {
+        await db.execute(
+            'ALTER TABLE reminders ADD COLUMN custom_repeat_days INTEGER DEFAULT NULL');
+        print('成功添加 custom_repeat_days 列');
+      } catch (e) {
+        print('添加 custom_repeat_days 列时出错: $e');
+        // 如果列已存在，忽略错误
+      }
     }
+
+    // 验证所有必需的列是否存在
+    final List<Map<String, dynamic>> columns =
+        await db.rawQuery('PRAGMA table_info(reminders)');
+    final List<String> columnNames =
+        columns.map((c) => c['name'].toString()).toList();
+
+    print('当前表的所有列: $columnNames');
   }
 
   Future<int> insertReminder(Reminder reminder) async {
