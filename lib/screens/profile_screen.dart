@@ -852,7 +852,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                       const SizedBox(width: 12),
                                       const Text(
-                                        '在小红书上关注我们',
+                                        '到小红书踢开发者一脚',
                                         style: TextStyle(
                                           fontSize: 15,
                                           color: CupertinoColors.black,

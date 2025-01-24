@@ -20,7 +20,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'reminders.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -50,6 +50,13 @@ class DatabaseService {
       await db.execute(
         'ALTER TABLE reminders ADD COLUMN repeatType TEXT NOT NULL DEFAULT "never"'
       );
+      print('Added repeatType column');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute(
+          'ALTER TABLE reminders ADD COLUMN custom_repeat_days INTEGER');
+      print('Added custom_repeat_days column');
     }
   }
 
