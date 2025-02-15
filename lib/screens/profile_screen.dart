@@ -14,6 +14,7 @@ import '../services/advice_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'orders_screen.dart';
+import 'settings_screen.dart';
 
 const deviderThickness = 0.15;
 const deviderHeight = 15.0;
@@ -557,6 +558,44 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       Text(
                                         l10n.shareApp,
                                         style: const TextStyle(
+                                          fontSize: 15,
+                                          color: CupertinoColors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(
+                                  height: deviderHeight,
+                                  thickness: deviderThickness,
+                                  color: CupertinoColors.separator,
+                                  indent: 16,
+                                  endIndent: 16,
+                                ),
+
+                                CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      CupertinoPageRoute(
+                                        builder: (context) =>
+                                            const SettingsScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        CupertinoIcons.settings,
+                                        color: CupertinoColors.black,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        '设置',
+                                        style: TextStyle(
                                           fontSize: 15,
                                           color: CupertinoColors.black,
                                         ),

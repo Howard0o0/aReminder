@@ -13,6 +13,7 @@ import 'dart:io';
 import 'providers/auth_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'providers/product_provider.dart';
+import 'providers/settings_provider.dart';
 
 // 后台任务回调函数
 @pragma('vm:entry-point')
@@ -89,6 +90,9 @@ class ForegroundTaskHandler extends TaskHandler {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final settings = SettingsProvider.instance;
+  await settings.init();
 
   // 初始化前台任务配置
   await _initForegroundTask();
@@ -214,6 +218,9 @@ class MyApp extends StatelessWidget {
           ),
           ChangeNotifierProvider(
             create: (context) => ProductProvider(),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => SettingsProvider(),
           ),
         ],
         child: FutureBuilder<RemindersProvider>(

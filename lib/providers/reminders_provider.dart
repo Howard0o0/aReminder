@@ -4,7 +4,7 @@ import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/api_service.dart';
 import '../models/repeat_type.dart';
-
+import '../providers/settings_provider.dart';
 class RemindersProvider with ChangeNotifier {
   static RemindersProvider? _instance;
   static Future<RemindersProvider>? _initializingFuture;
@@ -74,6 +74,11 @@ class RemindersProvider with ChangeNotifier {
       repeatType: reminder.repeatType,
       customRepeatDays: reminder.customRepeatDays,
     );
+
+    if (SettingsProvider.instance.nullTimeAsNow) {
+      // 设置为当前时间5秒后
+      newReminder.dueDate = DateTime.now().add(const Duration(seconds: 2));
+    }
 
     _reminders.add(newReminder);
     if (newReminder.dueDate != null) {
