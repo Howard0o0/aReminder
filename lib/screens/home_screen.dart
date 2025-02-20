@@ -224,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final filePath = '${tempDir.path}/update.apk';
 
                   await dio.download(
-                    'https://sharpofscience.top/app/aReminder.apk',
+                    'https://ftp.xscicu.top/aReminder.apk',
                     filePath,
                     options: Options(
                       headers: {

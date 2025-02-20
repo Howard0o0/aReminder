@@ -94,13 +94,13 @@ void main() async {
   final settings = SettingsProvider.instance;
   await settings.init();
 
-  // 初始化前台任务配置
-  await _initForegroundTask();
-  await FlutterForegroundTask.startService(
-    notificationTitle: 'aReminder',
-    notificationText: '保持 aReminder 在前台运行, 确保提醒正常触发',
-    callback: startForegroundTask,
-  );
+  // // 初始化前台任务配置
+  // await _initForegroundTask();
+  // await FlutterForegroundTask.startService(
+  //   notificationTitle: 'aReminder',
+  //   notificationText: '保持 aReminder 在前台运行, 确保提醒正常触发',
+  //   callback: startForegroundTask,
+  // );
 
   try {
     // 初始化通知服务
