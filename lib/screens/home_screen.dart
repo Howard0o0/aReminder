@@ -36,6 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showCompletedItems = false;
   final ValueNotifier<bool> _shouldHighlightInfo = ValueNotifier<bool>(false);
 
+  static const kMaxFreeReminders = 3;
+
   // 添加一个 Map 来跟踪每个提醒事项的动画状态
   final Map<int, bool> _animatingItems = {};
 
@@ -344,7 +346,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isNotVipAndTodoRemindersOverflow() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     return auth.isVipValid() == false &&
-        context.read<RemindersProvider>().incompleteReminders.length >= 10;
+        context.read<RemindersProvider>().incompleteReminders.length >=
+            kMaxFreeReminders;
   }
 
   void _startAddingNewReminder() {
@@ -353,7 +356,8 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: const Text('待办提醒事项已满'),
-          content: const Text('非会员最多只能创建10个待办提醒事项\n请将一些待办事项删除或者标记为已完成~'),
+          content: const Text(
+              '非会员最多只能创建$kMaxFreeReminders个待办提醒事项\n请将一些待办事项删除或者标记为已完成~'),
           actions: [
             CupertinoDialogAction(
               isDefaultAction: true,
