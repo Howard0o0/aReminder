@@ -136,7 +136,6 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
-          // title: const Text('无时间视为立即提醒'),
           content: const Text('是否将无时间视为立马提醒？'),
           actions: <Widget>[
             CupertinoDialogAction(
@@ -210,13 +209,33 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ),
                         title: '无时间视为立即提醒',
-                        trailing: Text(
-                          settings.nullTimeAsNow ? '是' : '否',
-                          style: const TextStyle(
-                            color: CupertinoColors.systemGrey,
+                        trailing: CupertinoSwitch(
+                          value: settings.nullTimeAsNow,
+                          onChanged: (bool value) {
+                            settings.setNullTimeAsNow(value);
+                          },
+                        ),
+                        onTap: null,
+                      ),
+                      _buildMenuItem(
+                        icon: null,
+                        customIcon: Container(
+                          width: 29,
+                          height: 29,
+                          child: const Icon(
+                            CupertinoIcons.text_aligncenter,
+                            size: 30,
+                            color: CupertinoColors.systemGrey3,
                           ),
                         ),
-                        onTap: () => _showNullTimeAsNowPicker(context),
+                        title: '多行显示提醒内容',
+                        trailing: CupertinoSwitch(
+                          value: settings.multiLineReminderContent,
+                          onChanged: (bool value) {
+                            settings.setMultiLineReminderContent(value);
+                          },
+                        ),
+                        onTap: null,
                       ),
                     ],
                   ),

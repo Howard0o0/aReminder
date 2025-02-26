@@ -6,6 +6,7 @@ enum RepeatType {
   weekends,
   weekly,
   monthly,
+  quarterly,
   yearly,
   custom;
 
@@ -25,6 +26,8 @@ enum RepeatType {
         return '每周';
       case RepeatType.monthly:
         return '每月';
+      case RepeatType.quarterly:
+        return '每3个月';
       case RepeatType.yearly:
         return '每年';
       case RepeatType.custom:
@@ -79,6 +82,16 @@ enum RepeatType {
         } else {
           return DateTime(
               next.year, next.month + 1, next.day, next.hour, next.minute);
+        }
+
+      case RepeatType.quarterly:
+        final newMonth = next.month + 3;
+        if (newMonth > 12) {
+          return DateTime(
+              next.year + 1, newMonth - 12, next.day, next.hour, next.minute);
+        } else {
+          return DateTime(
+              next.year, newMonth, next.day, next.hour, next.minute);
         }
 
       case RepeatType.yearly:

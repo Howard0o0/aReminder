@@ -5,6 +5,8 @@ import '../services/notification_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/repeat_type.dart';
 import 'repeat_type_picker.dart';
+import '../providers/settings_provider.dart';
+import 'package:provider/provider.dart';
 
 class ReminderDetailsSheet extends StatefulWidget {
   final Reminder reminder;
@@ -164,6 +166,11 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                     controller: _titleController,
                     placeholder: '新提醒事项',
                     padding: const EdgeInsets.all(16),
+                    maxLines: Provider.of<SettingsProvider>(context)
+                            .multiLineReminderContent
+                        ? null
+                        : 1,
+                    minLines: 1,
                   ),
                   CupertinoTextField(
                     controller: _notesController,
@@ -294,8 +301,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                                   _repeatType.getLocalizedName(
                                       customDays: _customRepeatDays),
                                   style: const TextStyle(
-                                    color: CupertinoColors.systemBlue
-                                  ),
+                                      color: CupertinoColors.systemBlue),
                                 ),
                                 const CupertinoListTileChevron(),
                               ],

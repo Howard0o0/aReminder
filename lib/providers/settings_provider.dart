@@ -32,6 +32,9 @@ class SettingsProvider with ChangeNotifier {
   bool _nullTimeAsNow = false;
   bool get nullTimeAsNow => _nullTimeAsNow;
 
+  bool _multiLineReminderContent = false;
+  bool get multiLineReminderContent => _multiLineReminderContent;
+
   bool _initialized = false;
   bool get isInitialized => _initialized;
 
@@ -45,6 +48,8 @@ class SettingsProvider with ChangeNotifier {
     _isLivePhotoEnabled = _prefs.getBool('live_photo_enabled') ?? false;
     _skipSplashAnimation = _prefs.getBool('skip_splash_animation') ?? false;
     _nullTimeAsNow = _prefs.getBool('null_time_as_now') ?? false;
+    _multiLineReminderContent =
+        _prefs.getBool('multi_line_reminder_content') ?? false;
 
     _initialized = true;
     notifyListeners();
@@ -78,6 +83,12 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setNullTimeAsNow(bool value) async {
     _nullTimeAsNow = value;
     await _prefs.setBool('null_time_as_now', value);
+    notifyListeners();
+  }
+
+  Future<void> setMultiLineReminderContent(bool value) async {
+    _multiLineReminderContent = value;
+    await _prefs.setBool('multi_line_reminder_content', value);
     notifyListeners();
   }
 }
