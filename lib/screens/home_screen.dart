@@ -444,13 +444,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         List<Reminder> currentReminders;
         switch (_currentListType) {
           case 'completed':
-            currentReminders = provider.completedReminders;
+            currentReminders = _sortReminders(provider.completedReminders);
           case 'scheduled':
             currentReminders =
                 _groupScheduledReminders(provider.scheduledReminders);
           case 'incomplete':
           default:
-            currentReminders = provider.incompleteReminders;
+            currentReminders = _sortReminders(provider.incompleteReminders);
         }
 
         return Stack(
@@ -992,6 +992,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return dueDate.isBefore(DateTime.now());
   }
 
+  // 添加一个辅助方法来排序提醒事项
+  List<Reminder> _sortReminders(List<Reminder> reminders) {
+    // 复制列表以避免修改原始数据
+    final List<Reminder> sortedList = List.from(reminders);
+
+    // 将提醒事项分为两组：没有到期时间的和有到期时间的
+    final List<Reminder> withoutDueDate =
+        sortedList.where((r) => r.dueDate == null).toList();
+    final List<Reminder> withDueDate =
+        sortedList.where((r) => r.dueDate != null).toList();
+
+    // 对没有到期时间的提醒事项按创建时间排序（假设id代表创建顺序）
+    withoutDueDate.sort((a, b) => (a.id ?? 0).compareTo(b.id ?? 0));
+
+    // 对有到期时间的提醒事项按到期时间升序排序
+    withDueDate.sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+
+    // 合并两个列表，没有到期时间的在前面
+    return [...withoutDueDate, ...withDueDate];
+  }
+
   String _formatSpeed(double speedInBytes) {
     if (speedInBytes < 1024) {
       return '${speedInBytes.toStringAsFixed(1)} B/s';
@@ -1007,14 +1028,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // 按日期排序
-    reminders.sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
-
+    // 首先对列表应用我们的排序逻辑
+    List<Reminder> sortedReminders = _sortReminders(reminders);
+    
     // 添加日期分隔符
     List<Reminder> groupedReminders = [];
     DateTime? lastDate;
 
-    for (var reminder in reminders) {
+    // 首先添加没有到期时间的提醒事项（如果有的话）
+    for (var reminder in sortedReminders.where((r) => r.dueDate == null)) {
+      groupedReminders.add(reminder);
+    }
+
+    // 如果有没有到期时间的提醒事项和有到期时间的提醒事项，添加一个分隔符
+    if (groupedReminders.isNotEmpty &&
+        sortedReminders.any((r) => r.dueDate != null)) {
+      final headerReminder = Reminder(
+        id: -1, // 使用固定ID
+        title: '计划',
+        isCompleted: false,
+        priority: -1, // 用于标识这是一个分隔符
+      );
+      groupedReminders.add(headerReminder);
+    }
+
+    // 然后处理有到期时间的提醒事项
+    for (var reminder in sortedReminders.where((r) => r.dueDate != null)) {
       final reminderDate = DateTime(
         reminder.dueDate!.year,
         reminder.dueDate!.month,
@@ -1022,9 +1061,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
 
       if (lastDate == null || reminderDate != lastDate) {
-        // 修改这里：为分隔符添加不同的前缀
         final headerReminder = Reminder(
-          id: -reminderDate.millisecondsSinceEpoch, // 仍然使用负的时间戳
+          id: -reminderDate.millisecondsSinceEpoch, // 使用负的时间戳
           title: _getDateHeader(reminderDate, today),
           isCompleted: false,
           priority: -1, // 用于标识这是一个分隔符
