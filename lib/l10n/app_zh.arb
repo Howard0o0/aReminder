@@ -58,7 +58,7 @@
   "profile": "我的",
   "login": "登录",
   "email": "邮箱",
-  "pleaseLogin": "请登录",
+  "pleaseLogin": "点击我登录",
   "pleaseInputEmail": "请输入邮箱",
   "invalidEmail": "邮箱格式不正确",
   "verificationCode": "验证码",
