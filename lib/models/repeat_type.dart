@@ -41,6 +41,12 @@ enum RepeatType {
   DateTime? getNextOccurrence(DateTime from, {int? customDays}) {
     final currentTime = DateTime.now();
     DateTime? next = from;
+
+    if (!next.isBefore(currentTime)) {
+      next = __getNextOccurrence(next, customDays: customDays);
+      return next;
+    }
+
     while (next != null && next.isBefore(currentTime)) {
       next = __getNextOccurrence(next, customDays: customDays);
     }
