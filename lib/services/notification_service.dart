@@ -95,7 +95,7 @@ class NotificationService {
                           child: Column(
                             children: [
                               const Text(
-                                '华为为例: 设置-应用和服务-应用管理-aReminder-通知管理-提醒服务\n'
+                                '华为为例: 设置-应用和服务-应用管理-iReminder-通知管理-提醒服务\n'
                                 '请开启以下通知权限:\n'
                                 '1. 锁屏通知\n'
                                 '2. 横幅通知',
@@ -117,7 +117,7 @@ class NotificationService {
                           child: Column(
                             children: [
                               const Text(
-                                '华为为例: 设置-应用和服务-应用启动管理-aReminder\n'
+                                '华为为例: 设置-应用和服务-应用启动管理-iReminder\n'
                                 '请开启以下权限:\n'
                                 '1. 允许自启动\n'
                                 '2. 允许后台活动',

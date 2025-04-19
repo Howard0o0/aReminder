@@ -55,7 +55,7 @@ class ApiService {
   static const String baseUrl = 'https://sharpofscience.top/common_service';
   // static const String baseUrl = 'http://sharpofscience.top:30012';
   // static const String baseUrl = 'http://192.168.5.11:56666';
-  static const String appKey = 'aReminder';
+  static const String appKey = 'iReminder';
 
   static const String officialWebsite = 'http://areminder.sharpofscience.top/';
 

@@ -97,8 +97,8 @@ void main() async {
   // // 初始化前台任务配置
   // await _initForegroundTask();
   // await FlutterForegroundTask.startService(
-  //   notificationTitle: 'aReminder',
-  //   notificationText: '保持 aReminder 在前台运行, 确保提醒正常触发',
+  //   notificationTitle: 'iReminder',
+  //   notificationText: '保持 iReminder 在前台运行, 确保提醒正常触发',
   //   callback: startForegroundTask,
   // );
 
@@ -166,9 +166,9 @@ void main() async {
 Future<void> _initForegroundTask() async {
   FlutterForegroundTask.init(
     androidNotificationOptions: AndroidNotificationOptions(
-      channelId: 'aReminder',
-      channelName: 'aReminder',
-      channelDescription: '保持 aReminder 在前台运行以确保提醒正常触发',
+      channelId: 'iReminder',
+      channelName: 'iReminder',
+      channelDescription: '保持 iReminder 在前台运行以确保提醒正常触发',
       channelImportance: NotificationChannelImportance.LOW,
       priority: NotificationPriority.LOW,
       enableVibration: false,
@@ -246,7 +246,7 @@ class MyApp extends StatelessWidget {
               value: snapshot.data!,
               child: CupertinoApp(
                 navigatorKey: navigatorKey,
-                title: 'aReminder',
+                title: 'iReminder',
                 theme: const CupertinoThemeData(
                   primaryColor: CupertinoColors.activeBlue,
                   brightness: Brightness.light,

@@ -14,7 +14,7 @@ class VersionService {
       final response = await http.get(
         Uri.parse('$baseUrl/api/v1/version/min-requirement').replace(
           queryParameters: {
-            'app_key': 'aReminder',
+            'app_key': 'iReminder',
           },
         ),
       );

@@ -175,175 +175,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             CupertinoDialogAction(
               onPressed: () async {
-                Navigator.pop(context); // 先关闭当前对话框
-
-                try {
-                  // 显示下载进度对话框
-                  BuildContext? dialogContext;
-                  StateSetter? dialogSetState; // 添加一个变量保存 StateSetter
-
-                  showCupertinoDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      dialogContext = context;
-                      return StatefulBuilder(
-                        builder:
-                            (BuildContext context, StateSetter setDialogState) {
-                          dialogSetState = setDialogState; // 保存 StateSetter 引用
-                          return CupertinoAlertDialog(
-                            title: const Text('正在下载更新'),
-                            content: Column(
-                              children: [
-                                const SizedBox(height: 10),
-                                LinearProgressIndicator(
-                                  value: _downloadProgress,
-                                  backgroundColor: Colors.grey[200],
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                          CupertinoColors.activeBlue),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                        '${(_downloadProgress * 100).toStringAsFixed(1)}%'),
-                                    if (_downloadSpeed.isNotEmpty) ...[
-                                      const SizedBox(width: 8), // 添加一些间距
-                                      Text(
-                                        _downloadSpeed,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: CupertinoColors.systemGrey,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
+                final url = Uri.parse('http://areminder.sharpofscience.top/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
                   );
-
-                  final dio = Dio();
-                  final tempDir = await getTemporaryDirectory();
-                  final filePath = '${tempDir.path}/update.apk';
-
-                  await dio.download(
-                    'https://ftp.xscicu.top/aReminder.apk',
-                    filePath,
-                    options: Options(
-                      headers: {
-                        'User-Agent':
-                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                      },
-                    ),
-                    onReceiveProgress: (received, total) {
-                      if (total != -1) {
-                        final now = DateTime.now();
-
-                        // 更新进度
-                        setState(() {
-                          _downloadProgress = received / total;
-                        });
-
-                        // 计算下载速度
-                        if (_lastProgressUpdate != null &&
-                            _lastReceivedBytes != null &&
-                            now.difference(_lastProgressUpdate!) >=
-                                _speedUpdateInterval) {
-                          final duration = now
-                              .difference(_lastProgressUpdate!)
-                              .inMilliseconds;
-                          final bytesPerSecond =
-                              (received - _lastReceivedBytes!) *
-                                  1000 /
-                                  duration;
-
-                          // 添加新的速度到缓冲区
-                          _speedBuffer.add(bytesPerSecond);
-                          if (_speedBuffer.length > _speedBufferSize) {
-                            _speedBuffer.removeAt(0);
-                          }
-
-                          // 计算平均速度
-                          final averageSpeed =
-                              _speedBuffer.reduce((a, b) => a + b) /
-                                  _speedBuffer.length;
-                          _downloadSpeed = _formatSpeed(averageSpeed);
-
-                          // 更新时间和字节数记录
-                          _lastProgressUpdate = now;
-                          _lastReceivedBytes = received;
-
-                          // 更新对话框UI
-                          dialogSetState?.call(() {});
-                        } else if (_lastProgressUpdate == null) {
-                          // 首次更新
-                          _lastProgressUpdate = now;
-                          _lastReceivedBytes = received;
-                        }
-                      }
-                    },
-                  );
-
-                  // 下载完成后关闭进度对话框
-                  if (dialogContext != null) {
-                    Navigator.pop(dialogContext!);
-                  }
-
-                  // 安装APK
-                  if (Platform.isAndroid) {
-                    try {
-                      await InstallPlugin.installApk(filePath);
-                    } catch (e) {
-                      if (mounted) {
-                        showCupertinoDialog(
-                          context: context,
-                          builder: (context) => CupertinoAlertDialog(
-                            title: const Text('安装失败'),
-                            content: Text('安装过程中出现错误：$e'),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('确定'),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    }
-                  }
-                } catch (e) {
-                  // 处理下载错误
-                  if (mounted) {
-                    showCupertinoDialog(
-                      context: context,
-                      builder: (context) => CupertinoAlertDialog(
-                        title: const Text('更新失败'),
-                        content: Text('下载过程中出现错误：$e'),
-                        actions: [
-                          CupertinoDialogAction(
-                            child: const Text('确定'),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
                 }
               },
-              child: const Text(
-                '立即更新',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black),
-              ),
+              child: const Text('去更新',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: CupertinoColors.systemBlue)),
             ),
           ],
         ),
@@ -1030,7 +874,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // 首先对列表应用我们的排序逻辑
     List<Reminder> sortedReminders = _sortReminders(reminders);
-    
+
     // 添加日期分隔符
     List<Reminder> groupedReminders = [];
     DateTime? lastDate;
