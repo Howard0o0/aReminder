@@ -14,6 +14,11 @@ import 'providers/auth_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'providers/product_provider.dart';
 import 'providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/gestures.dart';
+import 'dart:math';
+import 'dart:async';
 
 // 后台任务回调函数
 @pragma('vm:entry-point')
@@ -88,20 +93,218 @@ class ForegroundTaskHandler extends TaskHandler {
   }
 }
 
+// 权限请求对话框Widget
+class PermissionScreen extends StatefulWidget {
+  final Function onPermissionGranted;
+
+  const PermissionScreen({Key? key, required this.onPermissionGranted})
+      : super(key: key);
+
+  @override
+  State<PermissionScreen> createState() => _PermissionScreenState();
+}
+
+class _PermissionScreenState extends State<PermissionScreen>
+    with SingleTickerProviderStateMixin {
+  bool isPrivacyChecked = false;
+  late AnimationController _animationController;
+  late Animation<double> _shakeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _shakeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticIn,
+    ));
+
+    // 在下一帧显示对话框
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPermissionDialog();
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _showPermissionDialog() {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return CupertinoAlertDialog(
+              content: Container(
+                margin: const EdgeInsets.only(top: 8.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '为确保处于后台运行状态下可正常弹出提醒事项，本应用须使用(自启动)能力，将存在一定频率通过系统发送广播唤醒本应用自启动或关联启动行为，是因实现功能及服务所必要的。',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                      AnimatedBuilder(
+                        animation: _shakeAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(
+                              sin(_shakeAnimation.value * 3 * 3.14159) *
+                                  5 *
+                                  (1 - _shakeAnimation.value),
+                              0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CupertinoCheckbox(
+                                  value: isPrivacyChecked,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      isPrivacyChecked = value ?? false;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.4,
+                                      color: Colors.black,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: '我已阅读'),
+                                      TextSpan(
+                                        text: '隐私政策',
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            launchUrl(Uri.parse(
+                                                'https://mirrorcamera.sharpofscience.top/ireminder-privacy.html'));
+                                          },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  child: const Text(
+                    '拒绝并退出',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () {
+                    exit(0);
+                  },
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text(
+                    '同意',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (!isPrivacyChecked) {
+                      // 晃动单选框
+                      _animationController.reset();
+                      _animationController.forward();
+                      return;
+                    }
+                    Navigator.of(context).pop();
+
+                    // 标记为非首次启动
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('isFirstLaunch', false);
+                    await prefs.setBool('hasAgreedPrivacy', true);
+
+                    // 通知主函数权限已被授予
+                    widget.onPermissionGranted();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 返回一个简单的加载界面
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: CupertinoActivityIndicator(),
+      ),
+    );
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final settings = SettingsProvider.instance;
   await settings.init();
+  
+  // 检查是否是首次启动
+  final prefs = await SharedPreferences.getInstance();
+  final bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
 
-  // // 初始化前台任务配置
-  // await _initForegroundTask();
-  // await FlutterForegroundTask.startService(
-  //   notificationTitle: 'iReminder',
-  //   notificationText: '保持 iReminder 在前台运行, 确保提醒正常触发',
-  //   callback: startForegroundTask,
-  // );
+  if (isFirstLaunch) {
+    // 显示权限请求屏幕
+    runApp(MaterialApp(
+      home: PermissionScreen(
+        onPermissionGranted: () {
+          // 权限授予后初始化应用
+          initializeApp();
+        },
+      ),
+    ));
+  } else {
+    // 如果不是首次启动，直接初始化应用
+    initializeApp();
+  }
+}
 
+void initializeApp() async {
   try {
     // 初始化通知服务
     final notificationService = NotificationService();

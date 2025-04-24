@@ -69,8 +69,7 @@ class _HomeScreenState extends State<HomeScreen>
         _animationController.reset();
       }
     });
-    _checkFirstLaunch();
-
+    
     Future.microtask(() async {
       await NotificationService().requestRequiredPermissions();
       final prefs = await SharedPreferences.getInstance();
@@ -85,19 +84,6 @@ class _HomeScreenState extends State<HomeScreen>
       context.read<RemindersProvider>().loadReminders();
     });
     _checkVersion();
-  }
-
-  Future<void> _checkFirstLaunch() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
-    print('isFirstLaunch: $isFirstLaunch');
-
-    if (isFirstLaunch) {
-      // 显示权限提示对话框
-      if (mounted) {
-        _showPermissionDialog();
-      }
-    }
   }
 
   @override
@@ -304,143 +290,6 @@ class _HomeScreenState extends State<HomeScreen>
           },
         ),
       ),
-    );
-  }
-
-  void _showPermissionDialog() {
-    bool isPrivacyChecked = false;
-    final GlobalKey checkboxKey = GlobalKey();
-    late Animation<double> shakeAnimation;
-
-    showCupertinoDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // 创建晃动动画
-        shakeAnimation = Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).animate(CurvedAnimation(
-          parent: _animationController,
-          curve: Curves.elasticIn,
-        ));
-
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return CupertinoAlertDialog(
-              content: Container(
-                margin: const EdgeInsets.only(top: 8.0),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '为确保处于后台运行状态下可正常弹出提醒事项，本应用须使用(自启动)能力，将存在一定频率通过系统发送广播唤醒本应用自启动或关联启动行为，是因实现功能及服务所必要的。',
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                        textAlign: TextAlign.left,
-                      ),
-                      AnimatedBuilder(
-                        animation: shakeAnimation,
-                        builder: (context, child) {
-                          return Transform.translate(
-                            offset: Offset(
-                              sin(shakeAnimation.value * 3 * 3.14159) *
-                                  5 *
-                                  (1 - shakeAnimation.value),
-                              0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CupertinoCheckbox(
-                                  key: checkboxKey,
-                                  value: isPrivacyChecked,
-                                  onChanged: (bool? value) {
-                                    setState(() {
-                                      isPrivacyChecked = value ?? false;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      height: 1.4,
-                                      color: Colors.black,
-                                    ),
-                                    children: [
-                                      const TextSpan(text: '我已阅读'),
-                                      TextSpan(
-                                        text: '隐私政策',
-                                        style: const TextStyle(
-                                          color: Colors.blue,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            launchUrl(Uri.parse(
-                                                'https://mirrorcamera.sharpofscience.top/ireminder-privacy.html'));
-                                          },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  isDestructiveAction: true,
-                  child: const Text(
-                    '拒绝并退出',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onPressed: () {
-                    exit(0);
-                  },
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text(
-                    '同意',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  onPressed: () async {
-                    if (!isPrivacyChecked) {
-                      // 晃动单选框
-                      _animationController.reset();
-                      _animationController.forward();
-                      return;
-                    }
-                    Navigator.of(context).pop();
-
-                    // 标记为非首次启动
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('isFirstLaunch', false);
-                    await prefs.setBool('hasAgreedPrivacy', true);
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 

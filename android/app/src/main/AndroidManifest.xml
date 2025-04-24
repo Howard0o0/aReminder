@@ -15,9 +15,6 @@
     <!-- <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.INSTALL_PACKAGES" /> -->
 
-
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove" />
-
     <application
         android:usesCleartextTraffic="true"
         android:label="iReminder"
