@@ -1,5 +1,5 @@
 import 'dart:math';
-
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../providers/auth_provider.dart';
@@ -22,6 +22,7 @@ import 'package:install_plugin/install_plugin.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../providers/settings_provider.dart';
+import 'get_membership_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,12 +31,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   final TextEditingController _newReminderController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isAddingNewReminder = false;
   bool _showCompletedItems = false;
   final ValueNotifier<bool> _shouldHighlightInfo = ValueNotifier<bool>(false);
+  late AnimationController _animationController;
 
   static const kMaxFreeReminders = 3;
 
@@ -56,6 +59,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _animationController.reset();
+      }
+    });
+    _checkFirstLaunch();
+
     Future.microtask(() async {
       await NotificationService().requestRequiredPermissions();
       final prefs = await SharedPreferences.getInstance();
@@ -70,6 +85,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       context.read<RemindersProvider>().loadReminders();
     });
     _checkVersion();
+  }
+
+  Future<void> _checkFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+    print('isFirstLaunch: $isFirstLaunch');
+
+    if (isFirstLaunch) {
+      // 显示权限提示对话框
+      if (mounted) {
+        _showPermissionDialog();
+      }
+    }
   }
 
   @override
@@ -91,6 +119,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // 在 dispose 时移除高亮遮罩
     _shouldHighlightInfo.value = false;
 
+    _animationController.dispose();
     print('dispose');
 
     _newReminderController.dispose();
@@ -209,13 +238,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         builder: (context) => CupertinoAlertDialog(
           title: const Text('待办提醒事项已满'),
           content: const Text(
-              '非会员最多只能创建$kMaxFreeReminders个待办提醒事项.\n请将一些待办事项删除或者标记为已完成.',
+              '非Pro用户最多只能保留$kMaxFreeReminders个待办提醒事项.',
               textAlign: TextAlign.left),
           actions: [
             CupertinoDialogAction(
               isDefaultAction: true,
-              onPressed: () => Navigator.pop(context),
-              child: const Text('我知道了'),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
+              },
+              child: const Text('开通 PRO'),
             ),
           ],
         ),
@@ -268,6 +305,135 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           },
         ),
       ),
+    );
+  }
+
+  void _showPermissionDialog() {
+    bool isPrivacyChecked = false;
+    final GlobalKey checkboxKey = GlobalKey();
+    late Animation<double> shakeAnimation;
+
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // 创建晃动动画
+        shakeAnimation = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(
+          parent: _animationController,
+          curve: Curves.elasticIn,
+        ));
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return CupertinoAlertDialog(
+              content: Container(
+                margin: const EdgeInsets.only(top: 8.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedBuilder(
+                        animation: shakeAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(
+                              sin(shakeAnimation.value * 3 * 3.14159) *
+                                  5 *
+                                  (1 - shakeAnimation.value),
+                              0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CupertinoCheckbox(
+                                  key: checkboxKey,
+                                  value: isPrivacyChecked,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      isPrivacyChecked = value ?? false;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.4,
+                                      color: Colors.black,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: '我已阅读'),
+                                      TextSpan(
+                                        text: '隐私政策',
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            launchUrl(Uri.parse(
+                                                'https://mirrorcamera.sharpofscience.top/ireminder-privacy.html'));
+                                          },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  child: const Text(
+                    '拒绝并退出',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () {
+                    exit(0);
+                  },
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text(
+                    '同意',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (!isPrivacyChecked) {
+                      // 晃动单选框
+                      _animationController.reset();
+                      _animationController.forward();
+                      return;
+                    }
+                    Navigator.of(context).pop();
+
+                    // 标记为非首次启动
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('isFirstLaunch', false);
+                    await prefs.setBool('hasAgreedPrivacy', true);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

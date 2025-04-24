@@ -14,6 +14,7 @@ import 'dart:convert' show utf8;
 import '../models/product.dart';
 import '../services/api_service.dart';
 import '../models/order.dart';
+import 'dart:math';
 
 class GetMembershipScreen extends StatefulWidget {
   const GetMembershipScreen({super.key});
@@ -22,7 +23,8 @@ class GetMembershipScreen extends StatefulWidget {
   State<GetMembershipScreen> createState() => _GetMembershipScreenState();
 }
 
-class _GetMembershipScreenState extends State<GetMembershipScreen> {
+class _GetMembershipScreenState extends State<GetMembershipScreen>
+    with TickerProviderStateMixin {
   final _codeController = TextEditingController();
   final _focusNode = FocusNode();
   static const int _codeLength = 7;
@@ -30,6 +32,10 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
   bool _isLoadingProducts = true;
   String _selectedProductId = '';
   List<Product> _products = [];
+  bool _agreedToTerms = false;
+  // 新增晃动动画控制器
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
 
   Order? curr_order;
 
@@ -40,6 +46,20 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
     super.initState();
     // 使用 addPostFrameCallback 确保在构建完成后执行
     print('initState called'); // 调试日志
+
+    // 初始化晃动动画控制器
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    // 创建晃动动画
+    _shakeAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+      parent: _shakeController,
+      curve: Curves.elasticIn,
+    ));
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final productProvider =
           Provider.of<ProductProvider>(context, listen: false);
@@ -62,7 +82,75 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
   void dispose() {
     _codeController.dispose();
     _focusNode.dispose();
+    _shakeController.dispose();
     super.dispose();
+  }
+
+  // 添加协议勾选框构建方法
+  Widget _buildTermsAgreement() {
+    final size = MediaQuery.of(context).size;
+
+    return AnimatedBuilder(
+      animation: _shakeAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(
+              _shakeAnimation.value *
+                  10 *
+                  sin(_shakeAnimation.value * 3 * 3.14),
+              0),
+          child: child,
+        );
+      },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CupertinoCheckbox(
+              value: _agreedToTerms,
+              onChanged: (value) {
+                setState(() {
+                  _agreedToTerms = value ?? false;
+                });
+              },
+              activeColor: const Color(0xFFFF416C),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () async {
+              const url =
+                  "https://mirrorcamera.sharpofscience.top/ireminder-vip-protocol.html";
+              try {
+                if (await canLaunchUrl(Uri.parse(url))) {
+                  await launchUrl(Uri.parse(url),
+                      mode: LaunchMode.externalApplication);
+                } else {
+                  if (mounted) {
+                    ToastUtils.show('无法打开会员协议');
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ToastUtils.show('打开链接失败: $e');
+                }
+              }
+            },
+            child: Text(
+              '我已阅读会员协议(点我阅读)',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: size.width * 0.035,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleCodeInput(BuildContext context, String value) async {
@@ -194,7 +282,7 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
                                       ),
                                     ),
                                     Text(
-                                      'VIP',
+                                      'PRO',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: size.width * 0.08,
@@ -239,6 +327,8 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
                       children: [
                         // 会员选项
                         _buildMembershipOptions(),
+                        // 协议勾选框
+                        _buildTermsAgreement(),
                         // 底部购买按钮
                         Padding(
                           padding: EdgeInsets.only(
@@ -285,7 +375,7 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
 
   Widget _buildFeatureItem(IconData icon, String text) {
     final size = MediaQuery.of(context).size;
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -604,6 +694,12 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
     }
   }
 
+  // 晃动文本标签的方法
+  void _shakeTermsText() {
+    _shakeController.reset();
+    _shakeController.forward();
+  }
+
   // 为了保持代码整洁，建议将购买按钮抽取为单独的方法
   Widget _buildPurchaseButton(AppLocalizations l10n) {
     return SizedBox(
@@ -635,6 +731,14 @@ class _GetMembershipScreenState extends State<GetMembershipScreen> {
                   if (user == null) {
                     ToastUtils.show('请登录');
                     ApiService.addAppReport('购买时未登录');
+                    return;
+                  }
+
+                  // 检查是否同意了协议
+                  if (!_agreedToTerms) {
+                    _shakeTermsText();
+                    ToastUtils.show('请先阅读并同意会员协议');
+                    ApiService.addAppReport('用户未同意会员协议');
                     return;
                   }
 

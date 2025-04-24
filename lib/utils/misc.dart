@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<String> generateReport(String report) async {
   final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
@@ -12,19 +13,17 @@ Future<String> generateReport(String report) async {
   String os = '';
   String version = '';
 
-  // 获取当前应用版本
-  final packageInfo = await PackageInfo.fromPlatform();
-  version = packageInfo.version;
+  final prefs = await SharedPreferences.getInstance();
+  final hasAgreedPrivacy = await prefs.getBool('hasAgreedPrivacy') ?? false;
 
+  if (hasAgreedPrivacy) {
+    // 获取当前应用版本
+    final packageInfo = await PackageInfo.fromPlatform();
+    version = packageInfo.version;
 
-  if (Platform.isAndroid) {
     final androidInfo = await deviceInfo.androidInfo;
     deviceName = androidInfo.model;
     os = 'Android ${androidInfo.version.release}';
-  } else if (Platform.isIOS) {
-    final iosInfo = await deviceInfo.iosInfo;
-    deviceName = iosInfo.name;
-    os = '${iosInfo.systemName} ${iosInfo.systemVersion}';
   }
 
   String finalReport = '[$version] [os: $os] [device: $deviceName] $report';

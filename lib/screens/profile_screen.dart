@@ -118,6 +118,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  Future<void> onGetVipButtonClick(BuildContext context) async {
+    ApiService.addAppReport('用户点击了获取会员');
+    await Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => const GetMembershipScreen(),
+      ),
+    );
+    if (_authProvider.isLoggedIn) {
+      log('refreshing status after get membership');
+      setState(() {});
+    }
+  }
+
   void _showAdviceDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final TextEditingController _adviceController = TextEditingController();
@@ -413,6 +427,57 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           const SizedBox(height: 12),
                           Container(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFFFF9A9E),
+                                  Color(0xFFFAD0C4),
+                                ],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      const Color(0xFFFF9A9E).withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () => onGetVipButtonClick(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Image.asset(
+                                      'asset/image/logo_foreground_2.png',
+                                      width: 32,
+                                      height: 32,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      '开通 PRO',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: CupertinoColors.white,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
                             margin: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               color: CupertinoColors.white,
@@ -428,53 +493,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             child: Column(
                               children: [
-                                // 获取会员按钮
-                                CupertinoButton(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
-                                  onPressed: () async {
-                                    ApiService.addAppReport('用户点击了获取会员');
-                                    await Navigator.push(
-                                      context,
-                                      CupertinoPageRoute(
-                                        builder: (context) =>
-                                            const GetMembershipScreen(),
-                                      ),
-                                    );
-                                    if (_authProvider.isLoggedIn) {
-                                      log('refreshing status after get membership');
-                                      setState(() {});
-                                    }
-                                  },
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            CupertinoIcons.star,
-                                            color: CupertinoColors.black,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            l10n.getMembership,
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              color: CupertinoColors.black,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const Icon(
-                                        CupertinoIcons.chevron_right,
-                                        color: CupertinoColors.black,
-                                        size: 18,
-                                      ),
-                                    ],
-                                  ),
-                                ),
 
                                 const Divider(
                                   height: deviderHeight,
@@ -882,16 +900,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ToastUtils.show('无法打开链接');
                                     }
                                   },
-                                  child: Row(
+                                  child: const Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         CupertinoIcons.heart,
                                         color: CupertinoColors.black,
                                         size: 20,
                                       ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        '到小红书踢开发者一脚',
+                                      SizedBox(width: 12),
+                                      Text(
+                                        '关注小红书官方账号',
                                         style: TextStyle(
                                           fontSize: 15,
                                           color: CupertinoColors.black,
