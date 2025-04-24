@@ -493,7 +493,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             child: Column(
                               children: [
-
                                 const Divider(
                                   height: deviderHeight,
                                   thickness: deviderThickness,
@@ -924,6 +923,39 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   color: CupertinoColors.separator,
                                   indent: 16,
                                   endIndent: 16,
+                                ),
+                                CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  onPressed: () async {
+                                    const url =
+                                        'https://mirrorcamera.sharpofscience.top/ireminder-privacy.html';
+                                    final uri = Uri.parse(url);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri,
+                                          mode: LaunchMode.externalApplication);
+                                    } else {
+                                      if (!context.mounted) return;
+                                      ToastUtils.show('无法打开链接');
+                                    }
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        CupertinoIcons.person,
+                                        color: CupertinoColors.black,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        '隐私政策',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: CupertinoColors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
