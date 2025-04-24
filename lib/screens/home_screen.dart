@@ -237,8 +237,7 @@ class _HomeScreenState extends State<HomeScreen>
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: const Text('待办提醒事项已满'),
-          content: const Text(
-              '非Pro用户最多只能保留$kMaxFreeReminders个待办提醒事项.',
+          content: const Text('非Pro用户最多只能保留$kMaxFreeReminders个待办提醒事项.',
               textAlign: TextAlign.left),
           actions: [
             CupertinoDialogAction(
@@ -334,6 +333,14 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text(
+                        '为确保处于后台运行状态下可正常弹出提醒事项，本应用须使用(自启动)能力，将存在一定频率通过系统发送广播唤醒本应用自启动或关联启动行为，是因实现功能及服务所必要的。',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
                       AnimatedBuilder(
                         animation: shakeAnimation,
                         builder: (context, child) {

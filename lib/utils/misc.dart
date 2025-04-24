@@ -13,18 +13,18 @@ Future<String> generateReport(String report) async {
   String os = '';
   String version = '';
 
+  // 获取当前应用版本
+  final packageInfo = await PackageInfo.fromPlatform();
+  version = packageInfo.version;
+
   final prefs = await SharedPreferences.getInstance();
   final hasAgreedPrivacy = await prefs.getBool('hasAgreedPrivacy') ?? false;
 
-  if (hasAgreedPrivacy) {
-    // 获取当前应用版本
-    final packageInfo = await PackageInfo.fromPlatform();
-    version = packageInfo.version;
-
-    final androidInfo = await deviceInfo.androidInfo;
-    deviceName = androidInfo.model;
-    os = 'Android ${androidInfo.version.release}';
-  }
+  // if (hasAgreedPrivacy) {
+  //   final androidInfo = await deviceInfo.androidInfo;
+  //   deviceName = androidInfo.model;
+  //   os = 'Android ${androidInfo.version.release}';
+  // }
 
   String finalReport = '[$version] [os: $os] [device: $deviceName] $report';
 
