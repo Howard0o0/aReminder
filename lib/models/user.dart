@@ -4,6 +4,8 @@ class User {
   final bool isVip;
   final DateTime? vipExpiredAt;
   final String? invitationCode;
+  final String? nickname;
+  final String? avatarUrl;
 
   User({
     required this.userId,
@@ -11,6 +13,8 @@ class User {
     required this.isVip,
     this.vipExpiredAt,
     this.invitationCode,
+    this.nickname,
+    this.avatarUrl,
   });
 
   bool get isVipValid {
@@ -28,6 +32,8 @@ class User {
           ? DateTime.parse(json['vip_expired_at'])
           : null,
       invitationCode: json['invitation_code'],
+      nickname: json['nickname'],
+      avatarUrl: json['avatar_url'],
     );
   }
 
@@ -38,6 +44,8 @@ class User {
       'is_vip': isVip,
       'vip_expired_at': vipExpiredAt?.toIso8601String(),
       'invitation_code': invitationCode,
+      'nickname': nickname,
+      'avatar_url': avatarUrl,
     };
   }
 

@@ -109,6 +109,81 @@ class AuthProvider with ChangeNotifier {
     super.dispose();
   }
 
+  String userNickname() {
+    if (_user?.nickname != null) {
+      return _user!.nickname!;
+    }
+    return _user!.userId;
+  }
+
+  // 验证邮箱并登录
+  Future<bool> wxLogin(String code) async {
+    if (code == null) {
+      _setError(ErrorCode.invalidEmail);
+      return false;
+    }
+
+    _isLoading = true;
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      final verifyResponse = await ApiService.wxLogin(code);
+      if (!verifyResponse.success) {
+        _setError(verifyResponse.errorCode ?? ErrorCode.unknownError);
+        return false;
+      }
+
+      final userData = verifyResponse.data;
+      if (userData == null || userData['user_id'] == null) {
+        _setError(ErrorCode.invalidUserData);
+        return false;
+      }
+
+      final membershipResponse =
+          await ApiService.getMembershipStatus(userData['user_id']);
+      if (!membershipResponse.success) {
+        _setError(membershipResponse.errorCode ?? ErrorCode.unknownError);
+        return false;
+      }
+
+      final membershipData = membershipResponse.data;
+      print('membershipData: $membershipData');
+
+      _user = User(
+        userId: userData['user_id'],
+        appKey: ApiService.appKey,
+        isVip: membershipData?['is_member'] ?? false,
+        vipExpiredAt: membershipData?['expire_time'] != null
+            ? DateTime.parse(membershipData!['expire_time'])
+            : null,
+        invitationCode: membershipData?['invitation_code'],
+        nickname: userData['nickname'],
+        avatarUrl: userData['avatar_url'],
+      );
+
+      log('user login. user info: ${_user?.toJson()}');
+
+      try {
+        await _saveUserToStorage(_user!);
+      } catch (e) {
+        log('Error saving user data: $e');
+      }
+
+      _isCodeSent = false;
+      _email = null;
+
+      await _checkLifetimeVip();
+      return true;
+    } catch (e) {
+      _setError(ErrorCode.networkError);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // 发送验证码
   Future<bool> sendVerificationCode(String email) async {
     if (!canSendCode) return false;
@@ -256,6 +331,8 @@ class AuthProvider with ChangeNotifier {
             ? DateTime.parse(membershipData!['expire_time'])
             : null,
         invitationCode: membershipData?['invitation_code'],
+        nickname: _user!.nickname,
+        avatarUrl: _user!.avatarUrl,
       );
 
       await _saveUserToStorage(_user!);
@@ -338,6 +415,8 @@ class AuthProvider with ChangeNotifier {
           isVip: true,
           vipExpiredAt: expiredAt, // 永久会员无过期时间
           invitationCode: _user!.invitationCode,
+          nickname: _user!.nickname,
+          avatarUrl: _user!.avatarUrl,
         );
         await _saveUserToStorage(_user!);
       }

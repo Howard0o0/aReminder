@@ -5,6 +5,12 @@ import 'package:provider/provider.dart';
 import '../main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
+
+void printAndReport(String message) {
+  print(message);
+  ApiService.addAppReport(message);
+}
 
 Future<String> generateReport(String report) async {
   final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();

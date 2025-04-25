@@ -66,165 +66,123 @@ class NotificationService {
   }
 
   void showInstructionDialog(BuildContext context) {
-    final pageController = PageController();
-    int currentPage = 0;
-
     showCupertinoDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => PopScope(
         canPop: false,
-        child: StatefulBuilder(
-          builder: (context, setState) => CupertinoAlertDialog(
-            title: const Text("设置权限(很关键)"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 400,
-                  child: PageView(
-                    controller: pageController,
-                    onPageChanged: (index) {
-                      setState(() => currentPage = index);
-                    },
-                    children: [
-                      // 第一张图 - 通知权限设置
-                      Scrollbar(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              const Text(
-                                '华为为例: 设置-应用和服务-应用管理-iReminder-通知管理-提醒服务\n'
-                                '请开启以下通知权限:\n'
-                                '1. 锁屏通知\n'
-                                '2. 横幅通知',
-                                style: TextStyle(fontSize: 14),
-                                textAlign: TextAlign.left,
-                              ),
-                              const SizedBox(height: 10),
-                              Image.asset(
-                                'asset/image/huawei_notification.jpg',
-                                fit: BoxFit.contain,
-                              ),
-                            ],
+        child: CupertinoAlertDialog(
+          title: const Text("设置权限(很关键)"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('以小米/红米为例（点击查看大图）'),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      fullscreenDialog: true,
+                      builder: (context) => Scaffold(
+                        backgroundColor: Colors.black,
+                        appBar: AppBar(
+                          backgroundColor: Colors.black,
+                          iconTheme: const IconThemeData(color: Colors.white),
+                        ),
+                        body: SingleChildScrollView(
+                          child: InteractiveViewer(
+                            minScale: 0.5,
+                            maxScale: 5.0,
+                            child: Image.asset(
+                              'asset/image/xiaomi_ireminder_setting _tutorial.jpg',
+                              fit: BoxFit.fitWidth,
+                              width: MediaQuery.of(context).size.width,
+                            ),
                           ),
                         ),
                       ),
-                      // 第二张图 - 自启动权限设置
-                      Scrollbar(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              const Text(
-                                '华为为例: 设置-应用和服务-应用启动管理-iReminder\n'
-                                '请开启以下权限:\n'
-                                '1. 允许自启动\n'
-                                '2. 允许后台活动',
-                                style: TextStyle(fontSize: 14),
-                                textAlign: TextAlign.left,
-                              ),
-                              const SizedBox(height: 10),
-                              Image.asset(
-                                'asset/image/huawei_boot_manager.jpg',
-                                fit: BoxFit.contain,
-                              ),
-                            ],
-                          ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'asset/image/xiaomi_ireminder_setting _tutorial.jpg',
+                    fit: BoxFit.contain,
+                    height: 400,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // 添加小红书链接按钮
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: CupertinoButton(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  onPressed: () async {
+                    final url = 'http://xhslink.com/a/MxvPJFyPWIA2';
+                    if (await canLaunchUrl(Uri.parse(url))) {
+                      await launchUrl(Uri.parse(url));
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        CupertinoIcons.arrow_right_circle_fill,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '去小红书看详细说明',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                // 自定义指示点
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    2,
-                    (index) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: currentPage == index
-                            ? Colors.blue
-                            : Colors.grey.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // 添加小红书链接按钮
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
-                  ),
-                  child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    onPressed: () async {
-                      final url = 'http://xhslink.com/a/MxvPJFyPWIA2';
-                      if (await canLaunchUrl(Uri.parse(url))) {
-                        await launchUrl(Uri.parse(url));
-                      }
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          CupertinoIcons.arrow_right_circle_fill,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          '去小红书看详细说明',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () async {
-                  print('忽略');
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  '朕知道了',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black),
-                ),
-              ),
-              CupertinoDialogAction(
-                onPressed: () async {
-                  print('请求通知权限');
-                  AwesomeNotifications().requestPermissionToSendNotifications(
-                      channelKey: 'scheduled_channel');
-                },
-                child: const Text(
-                  '去设置',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black),
-                ),
               ),
             ],
           ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () async {
+                print('忽略');
+                Navigator.pop(context);
+              },
+              child: const Text(
+                '朕知道了',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
+              ),
+            ),
+            CupertinoDialogAction(
+              onPressed: () async {
+                print('请求通知权限');
+                AwesomeNotifications().requestPermissionToSendNotifications(
+                    channelKey: 'scheduled_channel');
+              },
+              child: const Text(
+                '去设置',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
+              ),
+            ),
+          ],
         ),
       ),
     );

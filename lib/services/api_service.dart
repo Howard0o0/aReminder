@@ -111,6 +111,28 @@ class ApiService {
     }
   }
 
+  static Future<ApiResponse<Map<String, dynamic>>> wxLogin(String code) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/auth/wxlogin').replace(
+          queryParameters: {
+            'app_key': appKey,
+            'code': code,
+          },
+        ),
+      );
+
+      print('微信登录响应: ${response.body}');
+
+      return _handleResponse<Map<String, dynamic>>(response);
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: '网络错误: $e',
+      );
+    }
+  }
+
   // 验证邮箱
   static Future<ApiResponse<Map<String, dynamic>>> verifyEmail(
       String email, String code) async {

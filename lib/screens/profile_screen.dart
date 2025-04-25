@@ -15,6 +15,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'orders_screen.dart';
 import 'settings_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:fluwx/fluwx.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import '../utils/misc.dart';
 
 const deviderThickness = 0.15;
 const deviderHeight = 15.0;
@@ -29,6 +34,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen>
     with WidgetsBindingObserver {
   late AuthProvider _authProvider;
+  Fluwx fluwx = Fluwx();
 
   @override
   void initState() {
@@ -40,6 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshStatus();
     });
+
+    _initFluwx();
   }
 
   @override
@@ -67,6 +75,65 @@ class _ProfileScreenState extends State<ProfileScreen>
       await _authProvider.updateVipStatus();
       setState(() {});
     }
+  }
+
+  _initFluwx() async {
+    await fluwx.registerApi(
+      appId: "wx00b1a7cc335532ae",
+      doOnAndroid: true,
+      doOnIOS: false,
+    );
+    var result = await fluwx.isWeChatInstalled;
+    print('is installed $result');
+
+    fluwx.addSubscriber((response) async {
+      if (response is! WeChatAuthResponse) {
+        print('not a WeChatAuthResponse, ignore');
+        return;
+      }
+
+      print(
+          '微信登录返回值. type: ${response.type}, code: ${response.code}, state: ${response.state}, country: ${response.country}, lang: ${response.lang}, errCode: ${response.errCode}');
+
+      final errCode = response.errCode;
+      final code = response.code;
+
+      if (errCode != 0) {
+        switch (errCode) {
+          case -4:
+            ToastUtils.show('登录失败: 微信授权被拒绝');
+            printAndReport('用户拒绝微信授权');
+            break;
+          case -2:
+            ToastUtils.show('登录失败: 微信登录被取消');
+            printAndReport('用户取消登录');
+          default:
+            ToastUtils.show('未知登录错误，错误码: $errCode');
+            printAndReport('未知微信登录失败, errCode: $errCode');
+            break;
+        }
+      }
+
+      final success = await _authProvider.wxLogin(code!);
+      if (!success) {
+        ToastUtils.show('登录失败: 微信登录失败');
+        printAndReport('微信登录失败');
+      } else {
+        ToastUtils.show('登录成功');
+      }
+    });
+  }
+
+  Future<void> wxLogin() async {
+    fluwx
+        .authBy(
+            which: NormalAuth(
+      scope: 'snsapi_userinfo',
+      state: 'wechat_sdk_demo_test',
+    ))
+        .then((data) {
+      print('微信登录返回值：$data');
+    });
   }
 
   void _copyInvitationCode(BuildContext context, String code) async {
@@ -270,12 +337,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   GestureDetector(
                     onTap: !auth.isLoggedIn
                         ? () {
-                            Navigator.push(
-                              context,
-                              CupertinoPageRoute(
-                                builder: (context) => const LoginScreen(),
-                              ),
-                            );
+                            _showLoginOptions(context);
                           }
                         : null,
                     child: Container(
@@ -318,7 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     children: [
                                       Text(
                                         auth.isLoggedIn
-                                            ? (auth.user?.userId ?? '非法用户')
+                                            ? auth.userNickname()
                                             : l10n.pleaseLogin,
                                         style: const TextStyle(
                                           fontSize: 17,
@@ -457,7 +519,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 child: Row(
                                   children: [
                                     Image.asset(
-                                      'asset/image/logo_foreground_2.png',
+                                      'asset/image/logo_round.png',
                                       width: 32,
                                       height: 32,
                                     ),
@@ -968,6 +1030,188 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  void _showImageCard(BuildContext context, String imageUrl) {
+    final l10n = AppLocalizations.of(context)!;
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 300,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemGrey6,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: GestureDetector(
+                onLongPress: () {
+                  // TODO: 保存图片到相册
+                },
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CupertinoActivityIndicator(
+                            radius: 16,
+                          ),
+                          const SizedBox(height: 10),
+                          if (loadingProgress.expectedTotalBytes != null)
+                            Text(
+                              '${((loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!) * 100).toInt()}%',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.systemGrey,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            CupertinoIcons.exclamationmark_circle,
+                            color: CupertinoColors.systemRed,
+                            size: 36,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '无法打开链接',
+                            style: const TextStyle(
+                              color: CupertinoColors.systemGrey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            isDefaultAction: true,
+            child: Text(l10n.cancel,
+                style: const TextStyle(color: CupertinoColors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReportOptionsBottomSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text("选择客服"),
+        // message: Text(""),
+        actions: [
+          CupertinoActionSheetAction(
+            child: Text(
+              "微信客服",
+              style: const TextStyle(color: CupertinoColors.activeBlue),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _showImageCard(context,
+                  "https://mirrorcamera.sharpofscience.top/wecom_hwzhu.jpg");
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: Text(
+              "Telegram 客服",
+              style: const TextStyle(color: CupertinoColors.activeBlue),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _showImageCard(context,
+                  "https://mirrorcamera.sharpofscience.top/telegram_hwzhu.jpg");
+            },
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          child: Text(
+            l10n.cancel,
+            style: const TextStyle(color: CupertinoColors.black),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+
+  void _showLoginOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => CupertinoActionSheet(
+        title: Text('选择登录方式'),
+        // message: Text(''),
+        actions: <CupertinoActionSheetAction>[
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              wxLogin();
+            },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('微信登录',
+                    style: TextStyle(color: CupertinoColors.activeBlue)),
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.pop(context);
+              final result = await Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+              if (result == true) {
+                _refreshStatus();
+              }
+            },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('邮箱登录',
+                    style: TextStyle(color: CupertinoColors.activeBlue)),
+              ],
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child:
+              Text(l10n.cancel, style: TextStyle(color: CupertinoColors.black)),
         ),
       ),
     );
