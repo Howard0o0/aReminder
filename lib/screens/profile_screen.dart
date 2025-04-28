@@ -730,7 +730,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           CupertinoAlertDialog(
                                         title: Text(l10n.contactUs),
                                         content:
-                                            const Text('howardzz@foxmail.com'),
+                                            const Text(
+                                            'support@quantum-realm.ltd'),
                                         actions: [
                                           CupertinoDialogAction(
                                             child: Text(l10n.copy,
@@ -741,7 +742,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               await Clipboard.setData(
                                                 const ClipboardData(
                                                     text:
-                                                        'howardzz@foxmail.com'),
+                                                        'support@quantum-realm.ltd'),
                                               );
                                               if (!context.mounted) return;
                                               Navigator.pop(context);
