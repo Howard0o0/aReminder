@@ -39,7 +39,7 @@ class AdviceService {
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/v1/advice/add').replace(queryParameters: {
-          'app_key': 'iReminder',
+          'app_key': 'aReminder',
         }),
         headers: {
           'Content-Type': 'application/json',
