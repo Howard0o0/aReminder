@@ -84,6 +84,9 @@ class _HomeScreenState extends State<HomeScreen>
       context.read<RemindersProvider>().loadReminders();
     });
     _checkVersion();
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    auth.updateVipStatus();
   }
 
   @override
@@ -223,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen>
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: const Text('待办提醒事项已满'),
-          content: const Text('非Pro用户最多只能保留$kMaxFreeReminders个待办提醒事项.',
+          content: const Text('非PRO用户最多只能保留$kMaxFreeReminders个待办提醒事项.',
               textAlign: TextAlign.left),
           actions: [
             CupertinoDialogAction(
