@@ -56,7 +56,7 @@ enum RepeatType {
   DateTime? __getNextOccurrence(DateTime from, {int? customDays}) {
     if (this == RepeatType.never) return null;
 
-    final next =
+    DateTime next =
         DateTime(from.year, from.month, from.day, from.hour, from.minute);
 
     switch (this) {
@@ -69,13 +69,13 @@ enum RepeatType {
 
       case RepeatType.weekdays:
         do {
-          next.add(const Duration(days: 1));
+          next = next.add(const Duration(days: 1));
         } while (next.weekday > 5 || next.weekday < 1);
         return next;
 
       case RepeatType.weekends:
         do {
-          next.add(const Duration(days: 1));
+          next = next.add(const Duration(days: 1));
         } while (next.weekday != 6 && next.weekday != 7);
         return next;
 
