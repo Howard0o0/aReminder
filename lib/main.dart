@@ -19,6 +19,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 import 'dart:math';
 import 'dart:async';
+import 'package:intl/date_symbol_data_local.dart';
 
 // 后台任务回调函数
 @pragma('vm:entry-point')
@@ -280,6 +281,7 @@ class _PermissionScreenState extends State<PermissionScreen>
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('zh_CN', null);
 
   final settings = SettingsProvider.instance;
   await settings.init();

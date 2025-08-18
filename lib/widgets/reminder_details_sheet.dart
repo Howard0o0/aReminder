@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/material.dart' show TimeOfDay, Material;
 import '../models/reminder.dart';
 import '../services/notification_service.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -7,6 +7,8 @@ import '../models/repeat_type.dart';
 import 'repeat_type_picker.dart';
 import '../providers/settings_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
 
 class ReminderDetailsSheet extends StatefulWidget {
   final Reminder reminder;
@@ -204,7 +206,8 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                               children: [
                                 if (_hasDate)
                                   Text(
-                                    '${_selectedDate?.year}年${_selectedDate?.month}月${_selectedDate?.day}日',
+                                    DateFormat('yyyy年M月d日 EEEE', 'zh_CN')
+                                        .format(_selectedDate!),
                                     style: const TextStyle(
                                         color: CupertinoColors.systemBlue),
                                   ),
@@ -332,26 +335,36 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                     ],
                   ),
                   if (_hasDate && _isDatePickerVisible)
-                    Container(
-                      height: 200,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      child: CupertinoDatePicker(
-                        key: const ValueKey('date_picker'),
-                        mode: CupertinoDatePickerMode.date,
-                        initialDateTime:
-                            _selectedDate?.isBefore(DateTime.now()) ?? true
-                                ? DateTime.now()
-                                : _selectedDate!,
-                        minimumDate: DateTime(
-                          DateTime.now().year,
-                          DateTime.now().month,
-                          DateTime.now().day,
-                        ),
-                        onDateTimeChanged: (DateTime date) {
+                    Material(
+                      color: CupertinoColors.white,
+                      child: TableCalendar(
+                        locale: 'zh_CN',
+                        firstDay: DateTime.utc(DateTime.now().year,
+                            DateTime.now().month, DateTime.now().day),
+                        lastDay: DateTime.utc(2030, 3, 14),
+                        focusedDay: _selectedDate ?? DateTime.now(),
+                        selectedDayPredicate: (day) {
+                          return isSameDay(_selectedDate, day);
+                        },
+                        onDaySelected: (selectedDay, focusedDay) {
                           setState(() {
-                            _selectedDate = date;
+                            _selectedDate = selectedDay;
                           });
                         },
+                        calendarStyle: const CalendarStyle(
+                          todayDecoration: BoxDecoration(
+                            color: CupertinoColors.systemGrey4,
+                            shape: BoxShape.circle,
+                          ),
+                          selectedDecoration: BoxDecoration(
+                            color: CupertinoColors.activeBlue,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        headerStyle: const HeaderStyle(
+                          formatButtonVisible: false,
+                          titleCentered: true,
+                        ),
                       ),
                     ),
                   if (_hasTime && _isTimePickerVisible)
