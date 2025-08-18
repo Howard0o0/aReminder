@@ -383,6 +383,13 @@ class _HomeScreenState extends State<HomeScreen>
                             builder: (context) => CupertinoActionSheet(
                               actions: [
                                 CupertinoActionSheetAction(
+                                  child: const Text('完成所有到期提醒'),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    provider.completeAllOverdueReminders();
+                                  },
+                                ),
+                                CupertinoActionSheetAction(
                                   child: const Text('个人中心'),
                                   onPressed: () {
                                     Navigator.pop(context); // 关闭弹出菜单

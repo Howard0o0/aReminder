@@ -192,4 +192,22 @@ class RemindersProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> completeAllOverdueReminders() async {
+    final overdueReminders = incompleteReminders
+        .where((r) => r.dueDate?.isBefore(DateTime.now()) ?? false)
+        .toList();
+
+    if (overdueReminders.isEmpty) {
+      print('没有需要完成的到期提醒');
+      return;
+    }
+
+    // To avoid concurrent modification issues
+    for (final reminder in List.from(overdueReminders)) {
+      await toggleComplete(reminder);
+    }
+
+    ApiService.addAppReport('完成所有到期提醒事项. [数量: ${overdueReminders.length}]');
+  }
 }
