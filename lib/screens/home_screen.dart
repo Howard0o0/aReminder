@@ -282,10 +282,14 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showReminderDetails(BuildContext context, Reminder reminder) {
-    showCupertinoModalPopup(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      enableDrag: false,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
       builder: (context) => SizedBox(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.of(context).size.height * 0.9,
         child: ReminderDetailsSheet(
           reminder: reminder,
           onUpdate: (updatedReminder) {

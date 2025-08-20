@@ -139,7 +139,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 2),
       decoration: const BoxDecoration(
         color: CupertinoColors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
@@ -167,7 +167,7 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                   CupertinoTextField(
                     controller: _titleController,
                     placeholder: '新提醒事项',
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     maxLines: Provider.of<SettingsProvider>(context)
                             .multiLineReminderContent
                         ? null
@@ -177,12 +177,12 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                   CupertinoTextField(
                     controller: _notesController,
                     placeholder: '备注',
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                   ),
                   CupertinoTextField(
                     controller: _urlController,
                     placeholder: 'URL',
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                   ),
                   CupertinoListSection.insetGrouped(
                     children: [
@@ -337,33 +337,69 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                   if (_hasDate && _isDatePickerVisible)
                     Material(
                       color: CupertinoColors.white,
-                      child: TableCalendar(
-                        locale: 'zh_CN',
-                        firstDay: DateTime.utc(DateTime.now().year,
-                            DateTime.now().month, DateTime.now().day),
-                        lastDay: DateTime.utc(2030, 3, 14),
-                        focusedDay: _selectedDate ?? DateTime.now(),
-                        selectedDayPredicate: (day) {
-                          return isSameDay(_selectedDate, day);
-                        },
-                        onDaySelected: (selectedDay, focusedDay) {
-                          setState(() {
-                            _selectedDate = selectedDay;
-                          });
-                        },
-                        calendarStyle: const CalendarStyle(
-                          todayDecoration: BoxDecoration(
-                            color: CupertinoColors.systemGrey4,
-                            shape: BoxShape.circle,
+                      child: Transform.scale(
+                        scale: 0.9,
+                        alignment: Alignment.topCenter,
+                        child: TableCalendar(
+                          locale: 'zh_CN',
+                          firstDay: DateTime.now(),
+                          lastDay: DateTime.now().add(const Duration(days: 30)),
+                          focusedDay: _selectedDate ?? DateTime.now(),
+                          selectedDayPredicate: (day) {
+                            return isSameDay(_selectedDate, day);
+                          },
+                          onDaySelected: (selectedDay, focusedDay) {
+                            setState(() {
+                              _selectedDate = selectedDay;
+                            });
+                          },
+                          calendarStyle: const CalendarStyle(
+                            todayDecoration: BoxDecoration(
+                              color: CupertinoColors.systemGrey4,
+                              shape: BoxShape.circle,
+                            ),
+                            selectedDecoration: BoxDecoration(
+                              color: CupertinoColors.activeBlue,
+                              shape: BoxShape.circle,
+                            ),
+                            cellMargin: EdgeInsets.all(2.0),
+                            outsideDaysVisible: false,
+                            defaultTextStyle: TextStyle(
+                              fontSize: 14.0,
+                            ),
+                            weekendTextStyle: TextStyle(
+                              fontSize: 14.0,
+                              color: CupertinoColors.label,
+                            ),
+                            selectedTextStyle: TextStyle(
+                              fontSize: 14.0,
+                              color: CupertinoColors.white,
+                            ),
+                            todayTextStyle: TextStyle(
+                              fontSize: 14.0,
+                              color: CupertinoColors.label,
+                            ),
                           ),
-                          selectedDecoration: BoxDecoration(
-                            color: CupertinoColors.activeBlue,
-                            shape: BoxShape.circle,
+                          headerStyle: const HeaderStyle(
+                            formatButtonVisible: false,
+                            titleCentered: true,
+                            titleTextStyle: TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            leftChevronPadding: EdgeInsets.all(8.0),
+                            rightChevronPadding: EdgeInsets.all(8.0),
                           ),
-                        ),
-                        headerStyle: const HeaderStyle(
-                          formatButtonVisible: false,
-                          titleCentered: true,
+                          daysOfWeekStyle: const DaysOfWeekStyle(
+                            weekdayStyle: TextStyle(
+                              fontSize: 12.0,
+                              color: CupertinoColors.systemGrey,
+                            ),
+                            weekendStyle: TextStyle(
+                              fontSize: 12.0,
+                              color: CupertinoColors.systemGrey,
+                            ),
+                          ),
                         ),
                       ),
                     ),
