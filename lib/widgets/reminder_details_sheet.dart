@@ -138,6 +138,11 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastSelectableDate =
+        DateTime(today.year + 80, today.month, today.day);
+
     return Container(
       padding: const EdgeInsets.only(top: 2),
       decoration: const BoxDecoration(
@@ -342,9 +347,9 @@ class _ReminderDetailsSheetState extends State<ReminderDetailsSheet> {
                         alignment: Alignment.topCenter,
                         child: TableCalendar(
                           locale: 'zh_CN',
-                          firstDay: DateTime.now(),
-                          lastDay: DateTime.now().add(const Duration(days: 30)),
-                          focusedDay: _selectedDate ?? DateTime.now(),
+                          firstDay: today,
+                          lastDay: lastSelectableDate,
+                          focusedDay: _selectedDate ?? today,
                           selectedDayPredicate: (day) {
                             return isSameDay(_selectedDate, day);
                           },
