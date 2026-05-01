@@ -31,6 +31,11 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Codex planning files
+task_plan.md
+findings.md
+progress.md
+
 # Symbolication related
 app.*.symbols
 
